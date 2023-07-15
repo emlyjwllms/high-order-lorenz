@@ -1,4 +1,4 @@
-# DG for Lorenz attractor
+# DG for stochastic Lorenz
 
 import sys
 import os
@@ -14,14 +14,17 @@ from scipy.special import jacobi
 
 # xdot function
 def f(xv):
-    #print(xv)
     x = xv[0]
     y = xv[1]
     z = xv[2]
     xdot = sigma*(y-x)
     ydot = x*(r-z) - y
     zdot = x*y - beta*z
-    return np.array([xdot,ydot,zdot]).T
+    return (np.array([xdot,ydot,zdot]) - 0.5*diff(xv)*(xv*np.sqrt(dt)/np.linalg.norm(xv)) + diff(xv)*dW[j]/dt).T
+
+# diffusion matrix
+def diff(xv):
+    return np.sqrt(dt)*np.ones(3)*np.linalg.norm(xv)
 
 # residual vector
 def resid(c,xh0):
@@ -99,7 +102,6 @@ def plegendre(x,porder):
     # return y,dy,ddy
     return y,dy
 
-
 if __name__ == "__main__":
 
     porder = 3
@@ -113,7 +115,7 @@ if __name__ == "__main__":
     # simulation parameters
     TA = 10
     TB = 5
-    dt = 0.25
+    dt = 0.01
     t = np.arange(-TB,TA+TB+1,dt)
     N = len(t)
 
@@ -125,57 +127,52 @@ if __name__ == "__main__":
     print("Number of quadrature weights: ", str(len(w)))
     print(str(w))
 
-    # initial conditions
-    xh = np.zeros((3,N)) # states x elements
-    x0 = np.array([-8.67139571762,4.98065219709,25]).T
-    xh[:,0] = x0
-    xhqx = []
-    xhqy = []
-    xhqz = []
-    tq = []
-
     # precompute polynomials
     phi, dphi = plegendre(xi,porder)
     phi_left, dphi_left = plegendre(-1,porder) # dphi_left not used
     phi_right, dphi_right = plegendre(1,porder) # dphi_right not used
 
-    xh0 = xh[:,0]
-    cguess = np.array([np.append(xh0[0],np.zeros(porder)),
-                       np.append(xh0[1],np.zeros(porder)),
-                       np.append(xh0[2],np.zeros(porder))])
-    print(cguess)
-    # print(np.shape(cguess))
+    
+    mc = 100
 
-    # integrate across elements
-    print('loop through elements')
-    for j in range(1,N): # loop across I_j's
-        t0 = t[j-1]
-        tf = t[j]
+    xhs = np.empty((mc,3,N))
+
+    for i in range(mc):
+        np.random.seed(i)
+        dW = np.sqrt(dt) * np.random.randn(N)
+        W = np.cumsum(dW)
+
+        # initial conditions
+        xh = np.zeros((3,N)) # states x elements
+        x0 = np.array([-8.67139571762,4.98065219709,25]).T
+        xh[:,0] = x0
+
+        xh0 = xh[:,0]
+        cguess = np.array([np.append(xh0[0],np.zeros(porder)),
+                        np.append(xh0[1],np.zeros(porder)),
+                        np.append(xh0[2],np.zeros(porder))])
         #print(cguess)
-        # optimize.root can only take 1D arrays
-        cguess = np.reshape(cguess,(3*(porder+1),)) # reshape from (states x p+1) to (states*(p+1) x 1)
-        c = scipy.optimize.root(resid, cguess, args=(xh0,)).x # solve residual function above
-        c = np.reshape(c,(3,porder+1)) # reshape back to (states x p+1)
-        #print(c)
-        tq = np.append(tq,t0)
-        xhqx = np.append(xhqx,phi_left @ c[0,:])
-        xhqx = np.append(xhqx,phi @ c[0,:])
-        xhqx = np.append(xhqx,phi_right @ c[0,:])
-        xhqy = np.append(xhqy,phi_left @ c[1,:])
-        xhqy = np.append(xhqy,phi @ c[1,:])
-        xhqy = np.append(xhqy,phi_right @ c[1,:])
-        xhqz = np.append(xhqz,phi_left @ c[2,:])
-        xhqz = np.append(xhqz,phi @ c[2,:])
-        xhqz = np.append(xhqz,phi_right @ c[2,:])
-        tq = np.append(tq,dt*xi/2 + (t0+tf)/2)
-        tq = np.append(tq,tf)
-        # compute xh
-        xh[:,j] = (np.vstack([phi_right @ c[0,:],phi_right @ c[1,:],phi_right @ c[2,:]])).T
-        cguess = c
-        xh0 = xh[:,j]
-        #print(xh0)
+        # integrate across elements
+        #print('loop through elements')
+        for j in range(1,N): # loop across I_j's
+            t0 = t[j-1]
+            tf = t[j]
+            #print(cguess)
+            # optimize.root can only take 1D arrays
+            cguess = np.reshape(cguess,(3*(porder+1),)) # reshape from (states x p+1) to (states*(p+1) x 1)
+            c = scipy.optimize.root(resid, cguess, args=(xh0,)).x # solve residual function above
+            c = np.reshape(c,(3,porder+1)) # reshape back to (states x p+1)
+            #print(c)
+            # compute xh
+            xh[:,j] = (np.vstack([phi_right @ c[0,:],phi_right @ c[1,:],phi_right @ c[2,:]])).T
+            cguess = c
+            xh0 = xh[:,j]
+        
+        xhs[i,:,:] = xh
 
-    np.savez('dg_lorenz_dt4_p3', xh=xh, t=t)
+    E_xh = np.mean(xhs,0)
+
+    np.savez('dg_stochastic_lorenz_dt100_p3', E_xh=E_xh)
 
 
 

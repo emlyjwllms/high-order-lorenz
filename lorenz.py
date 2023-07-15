@@ -45,7 +45,7 @@ def dfdx(xv):
 
 if __name__ == "__main__":
     # nonlinear ODE - lorenz system
-    # x' = f(x)
+    # xdot = f(x)
     # x(0) = x0
 
     # params
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # simulation parameters
     TA = 10
     TB = 5
-    dt = 0.001
+    dt = 0.01
     t = np.arange(-TB,TA+TB+1,dt)
     N = len(t)
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     plt.grid()
     plt.show()
 
-    np.savez('lorenz_dt1000', t=t, x_FE=x_FE, x_BE=x_BE, x_RK=x_RK )
+    np.savez('lorenz_dt100', t=t, x_FE=x_FE, x_BE=x_BE, x_RK=x_RK )
 
     # fig = plt.figure(figsize=(7,7))
     # ax1 = fig.add_subplot(1,1,1,projection='3d')
