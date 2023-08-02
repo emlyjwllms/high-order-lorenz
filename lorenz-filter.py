@@ -7,6 +7,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 import scipy
 import pandas as pd
@@ -74,10 +75,10 @@ if __name__ == "__main__":
     r = 28
     beta = 8/3
 
-    plots = False
+    plots = True
 
-    #widths = np.array([1,0.5,0.25,0.1,0.05,0.025])
-    widths = np.arange(0.01,1+0.005,0.005)
+    widths = np.array([1,0.5,0.25,0.1,0.05,0.025])
+    #widths = np.arange(0.01,1+0.005,0.005)
     filter_data = {}
 
     fig = plt.figure(figsize=(7,7))
@@ -91,13 +92,14 @@ if __name__ == "__main__":
 
         el = int(Delta/dt)+1
 
-        if (round(Del,3) == 0.250 or round(Del,4) == 0.0250) and plots == True:
+        if (round(Del,3) == 0.250 or round(Del,4) == 0.0250 or round(Del,4) == 0.500 or round(Del,4) == 1) and plots == True:
             Delta = round(Delta,3)
             fig1 = plt.figure(figsize=(20,10))
             ax1 = fig1.add_subplot(3,3,1)
             ax1.plot(t,x_DG[0,:],label=r"$\mathbf{x}$")
             #ax1.vlines(Tp,-15,15,colors='k',linestyles='dashed',alpha=0.4)
             ax1.plot(t[int(el):-int(el)],xbar[int(el):-int(el),0],label=r"$\overline{\mathbf{x}}$")
+            ax1.plot(t[int(el):-int(el)],x_DG[0,int(el):-int(el)] - xbar[int(el):-int(el),0],label=r"${\mathbf{x'}}$")
             ax1.set_ylabel(r"$x$")
             ax1.legend(loc='upper left')
             ax1.set_title(r"$\Delta = $" + str(Delta) + ", filtered states")
@@ -108,6 +110,7 @@ if __name__ == "__main__":
             ax2.plot(t,x_DG[1,:],label=r"$\mathbf{x}$")
             #ax1.vlines(Tp,-15,15,colors='k',linestyles='dashed',alpha=0.4)
             ax2.plot(t[int(el):-int(el)],xbar[int(el):-int(el),1],label=r"$\overline{\mathbf{x}}$")
+            ax2.plot(t[int(el):-int(el)],x_DG[1,int(el):-int(el)] - xbar[int(el):-int(el),1],label=r"${\mathbf{x'}}$")
             ax2.set_ylabel(r"$y$")
             #ax2.legend()
             ax2.grid()
@@ -116,6 +119,7 @@ if __name__ == "__main__":
             ax3.plot(t,x_DG[2,:],label=r"$\mathbf{x}$")
             #ax1.vlines(Tp,-15,15,colors='k',linestyles='dashed',alpha=0.4)
             ax3.plot(t[int(el):-int(el)],xbar[int(el):-int(el),2],label=r"$\overline{\mathbf{x}}$")
+            ax3.plot(t[int(el):-int(el)],x_DG[2,int(el):-int(el)] - xbar[int(el):-int(el),2],label=r"${\mathbf{x'}}$")
             ax3.set_ylabel(r"$z$")
             ax3.set_xlabel(r"$t$")
             #ax3.legend()
@@ -180,8 +184,97 @@ if __name__ == "__main__":
 
             plt.savefig('plots/lorenz-filter-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
+            if (round(Del,4) == 0.500):
+
+                # phase plots, xbar components with colored s's
+                fig55 = plt.figure(figsize=(7,7))
+                ax15 = fig55.add_subplot(1,1,1,projection='3d')
+                p = ax15.scatter(xbar[int(el):-int(el),0],xbar[int(el):-int(el),1],xbar[int(el):-int(el),2],c=s[int(el):-int(el),0],s=10,cmap=mpl.cm.Blues,label=r"$\mathbf{s}_1$")
+                ax15.set_xlabel(r"$\overline{\mathbf{x}}_1$")
+                ax15.set_ylabel(r"$\overline{\mathbf{x}}_2$")
+                ax15.set_zlabel(r"$\overline{\mathbf{x}}_3$")
+                ax15.set_title(r"$\Delta$ = " + str(round(Del,3)))
+                ax15.legend()
+                fig55.colorbar(p,shrink=0.5,pad=0.1)
+
+                plt.savefig('plots/lorenz-sgs1-s-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
+                #plt.show()
+
+                fig555 = plt.figure(figsize=(7,7))
+                ax15 = fig555.add_subplot(1,1,1,projection='3d')
+                p = ax15.scatter(xbar[int(el):-int(el),0],xbar[int(el):-int(el),1],xbar[int(el):-int(el),2],c=s[int(el):-int(el),1],s=10,cmap=mpl.cm.Greens,label=r"$\mathbf{s}_2$")
+                ax15.set_xlabel(r"$\overline{\mathbf{x}}_1$")
+                ax15.set_ylabel(r"$\overline{\mathbf{x}}_2$")
+                ax15.set_zlabel(r"$\overline{\mathbf{x}}_3$")
+                ax15.set_title(r"$\Delta$ = " + str(round(Del,3)))
+                ax15.legend()
+                fig555.colorbar(p,shrink=0.5,pad=0.1)
+
+                plt.savefig('plots/lorenz-sgs2-s-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
+                #plt.show()
+
+                fig5555 = plt.figure(figsize=(7,7))
+                ax15 = fig5555.add_subplot(1,1,1,projection='3d')
+                p = ax15.scatter(xbar[int(el):-int(el),0],xbar[int(el):-int(el),1],xbar[int(el):-int(el),2],c=s[int(el):-int(el),2],s=5,cmap=mpl.cm.Oranges,label=r"$\mathbf{s}_3$")
+                ax15.set_xlabel(r"$\overline{\mathbf{x}}_1$")
+                ax15.set_ylabel(r"$\overline{\mathbf{x}}_2$")
+                ax15.set_zlabel(r"$\overline{\mathbf{x}}_3$")
+                ax15.set_title(r"$\Delta$ = " + str(round(Del,3)))
+                ax15.legend()
+                fig5555.colorbar(p,shrink=0.5,pad=0.1)
+
+                plt.savefig('plots/lorenz-sgs3-s-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
+                #plt.show()
+
+                # phase plots, xbar components with colored x''s
+                fig56 = plt.figure(figsize=(7,7))
+                ax15 = fig56.add_subplot(1,1,1,projection='3d')
+                p = ax15.scatter(xbar[int(el):-int(el),0],xbar[int(el):-int(el),1],xbar[int(el):-int(el),2],c=x_DG[0,int(el):-int(el)] - xbar[int(el):-int(el),0],s=10,cmap=mpl.cm.Blues,label=r"$\mathbf{x'}_1$")
+                ax15.set_xlabel(r"$\overline{\mathbf{x}}_1$")
+                ax15.set_ylabel(r"$\overline{\mathbf{x}}_2$")
+                ax15.set_zlabel(r"$\overline{\mathbf{x}}_3$")
+                ax15.set_title(r"$\Delta$ = " + str(round(Del,3)))
+                ax15.legend()
+                fig55.colorbar(p,shrink=0.5,pad=0.1)
+
+                plt.savefig('plots/lorenz-sgs1-xp-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
+                #plt.show()
+
+                fig556 = plt.figure(figsize=(7,7))
+                ax15 = fig556.add_subplot(1,1,1,projection='3d')
+                p = ax15.scatter(xbar[int(el):-int(el),0],xbar[int(el):-int(el),1],xbar[int(el):-int(el),2],c=x_DG[1,int(el):-int(el)] - xbar[int(el):-int(el),1],s=10,cmap=mpl.cm.Greens,label=r"$\mathbf{x'}_2$")
+                ax15.set_xlabel(r"$\overline{\mathbf{x}}_1$")
+                ax15.set_ylabel(r"$\overline{\mathbf{x}}_2$")
+                ax15.set_zlabel(r"$\overline{\mathbf{x}}_3$")
+                ax15.set_title(r"$\Delta$ = " + str(round(Del,3)))
+                ax15.legend()
+                fig55.colorbar(p,shrink=0.5,pad=0.1)
+
+                plt.savefig('plots/lorenz-sgs2-xp-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
+                #plt.show()
+
+                fig5556 = plt.figure(figsize=(7,7))
+                ax15 = fig5556.add_subplot(1,1,1,projection='3d')
+                p = ax15.scatter(xbar[int(el):-int(el),0],xbar[int(el):-int(el),1],xbar[int(el):-int(el),2],c=x_DG[2,int(el):-int(el)] - xbar[int(el):-int(el),2],s=10,cmap=mpl.cm.Oranges,label=r"$\mathbf{x'}_3$")
+                ax15.set_xlabel(r"$\overline{\mathbf{x}}_1$")
+                ax15.set_ylabel(r"$\overline{\mathbf{x}}_2$")
+                ax15.set_zlabel(r"$\overline{\mathbf{x}}_3$")
+                ax15.set_title(r"$\Delta$ = " + str(round(Del,3)))
+                ax15.legend()
+                fig55.colorbar(p,shrink=0.5,pad=0.1)
+
+                plt.savefig('plots/lorenz-sgs3-xp-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
+                #plt.show()
 
         if np.isclose(round(Del,3) % 0.05,0):
+            
+            print(round(Del,3))
 
             ax.plot(t[int(el):-int(el)],s[int(el):-int(el),0],color="tab:blue", alpha=Del/0.8)
             #ax.set_xlabel(r"$t$")
@@ -201,12 +294,9 @@ if __name__ == "__main__":
             ax33.set_ylabel(r"$\mathbf{s}_3$")
             ax33.grid()
             #ax33.legend()
-    
-    ax.grid()
-    ax22.grid()
-    ax33.grid()
 
-    plt.savefig('plots/lorenz-sgs-del.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+            #plt.savefig('plots/lorenz-sgs-del.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+
 
     df = pd.DataFrame(filter_data,index=['s','fbar','fx','fxbar','x_DG','xbar','Delta','dt','t']).T
 
