@@ -131,34 +131,44 @@ if __name__ == "__main__":
 
     s, fbar, fx, fxbar, x_DG, xbar, xp, Delta, dt, t = lorenz_sgs(Del)
 
-    #s_model = 0.5*xp.T*(hes + Delta**2/12 * jac.T * hes * jac)*xp
+    s_model = np.zeros((len(xbar),3))
 
     # offset to avoid boundary effects
     el = int(Delta/dt)+1
 
+    for i in range(len(xbar)):
+
+        jac = jacobian(xbar[i,:])
+        hes = hessian(xbar[i,:])
+
+        xpi = xp[i,:]
+
+        s_model[i,:] = 0.5*np.matmul(np.matmul(xpi.T,hes + Delta**2/12 * jac.T * hes * jac),xpi)/Delta
+
+
     fig1 = plt.figure(figsize=(12,8))
     ax1 = fig1.add_subplot(3,1,1)
     ax1.plot(t[int(el):-int(el)],s[int(el):-int(el),0])
+    ax1.plot(t[int(el):-int(el)],s_model[int(el):-int(el),0],label=r"$\mathbf{s}_{model}$")
     ax1.set_ylabel(r"$\mathbf{s}_1$")
-    #ax1.set_title("subgrid dynamics")
+    ax1.set_title(r"$\Delta$ = " + str(Delta))
     ax1.set_yticks(np.array([-1,-0.5,0,0.5,1]))
+    ax1.legend()
     ax1.grid()
 
     ax2 = fig1.add_subplot(3,1,2)
     ax2.plot(t[int(el):-int(el)],s[int(el):-int(el),1])
+    ax2.plot(t[int(el):-int(el)],s_model[int(el):-int(el),1])
     ax2.set_ylabel(r"$\mathbf{s}_2$")
     ax2.grid()
 
     ax3 = fig1.add_subplot(3,1,3)
     ax3.plot(t[int(el):-int(el)],s[int(el):-int(el),2])
+    ax3.plot(t[int(el):-int(el)],s_model[int(el):-int(el),2])
     ax3.set_ylabel(r"$\mathbf{s}_3$")
     ax3.set_xlabel(r"$t$")
     ax3.grid()
 
-    for i in range(100):
-        jac = jacobian(xbar[i,:])
-        hes = hessian(xbar[i,:])
-        s_model = 0.5*xp[i,:].T*(hes + Delta**2/12 * jac.T * hes * jac)*xp[i,:]
-        print(s_model.shape)
+    plt.savefig('plots/lorenz-sgs-model-Delta-'+str(Delta)+'.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
-    # plt.show()
+    plt.show()
