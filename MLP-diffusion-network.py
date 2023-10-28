@@ -25,7 +25,7 @@ class MLP_diff_NN(tf.Module):
         
         for i in range(len(neurons_per_layer)):
             
-            neurons_per_layer[i] = int(2**(5 + p - (i + 1)))
+            neurons_per_layer[i] = int(2**(n_hlayers + p - (i + 1)))
             
         # creates the hidden layer    
         self.h_layers = []
@@ -68,7 +68,7 @@ class MLP_diff_NN(tf.Module):
             loss = self.compute_loss(predicted_X1, train_X1)
             
         return tape.gradient(loss, self.trainable_variables), loss
-    
+
     
     
     
