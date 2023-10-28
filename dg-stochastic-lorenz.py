@@ -1,4 +1,6 @@
-# DG for stochastic Lorenz
+# DG for (stochastic) Lorenz attractor
+
+# filtered dynamics
 
 import sys
 import os
@@ -20,11 +22,7 @@ def f(xv):
     xdot = sigma*(y-x)
     ydot = x*(r-z) - y
     zdot = x*y - beta*z
-    return (np.array([xdot,ydot,zdot]) - 0.5*diff(xv)*(xv*np.sqrt(dt)/np.linalg.norm(xv)) + diff(xv)*dW[j]/dt).T
-
-# diffusion matrix
-def diff(xv):
-    return np.sqrt(dt)*np.ones(3)*np.linalg.norm(xv)
+    return np.array([xdot,ydot,zdot]).T + s_model
 
 # residual vector
 def resid(c,xh0):
@@ -39,40 +37,63 @@ def resid(c,xh0):
         phi_c = np.vstack([[phi @ c[0,:]],[phi @ c[1,:]],[phi @ c[2,:]]])
         
         r[:,k] = np.diag(np.vstack([[dphi_k.T @ np.diag(w) @ phi @ c[0,:]],[dphi_k.T @ np.diag(w) @ phi @ c[1,:]],[dphi_k.T @ np.diag(w) @ phi @ c[2,:]]]) + np.tile(phi_k.T @ np.diag(0.5*dt*w),(3,1)) @ f(phi_c) - np.vstack([[phi_k_right.T @ phi_right @ c[0,:]],[phi_k_right.T @ phi_right @ c[1,:]],[phi_k_right.T @ phi_right @ c[2,:]]]) + np.vstack([[phi_k_left.T @ np.array([xh0[0]])],[phi_k_left.T @ np.array([xh0[1]])],[phi_k_left.T @ np.array([xh0[2]])]]))
-    #print(np.shape(r))
-    #print(r)
-    #print(dr_dc)
+    
     return np.reshape(r,(3*(porder+1),))
 
-def gaussquad1d(pgauss):
+def jacobian(xv):
+    x = xv[0]
+    y = xv[1]
+    z = xv[2]
+    J = np.zeros((3,3))
+    J[0][0] = -sigma # df1/dx
+    J[0][1] = sigma # df1/dy
+    J[0][2] = 0 # df1/dz
+    J[1][0] = r-z # df2/dx
+    J[1][1] = -1 # df2/dy
+    J[1][2] = -x # df2/dz
+    J[2][0] = y # df3/dx
+    J[2][1] = x # df3/dy
+    J[2][2] = -beta # df3/dz
+    return J
 
-    """     
-    gaussquad1d calculates the gauss integration points in 1d for [-1,1]
-    [x,w]=gaussquad1d(pgauss)
+def hessian(xv):
+    x = xv[0]
+    y = xv[1]
+    z = xv[2]
+    H1 = np.zeros((3,3)) # sigma*(y-x)
+    H1[0][0] = 0 # d^2 f1 / dx^2
+    H1[0][1] = 0 # d^2 f1 / dx dy
+    H1[0][2] = 0 # d^2 f1 / dx dz
+    H1[1][0] = 0 # d^2 f1 / dy dx
+    H1[1][1] = 0 # d^2 f1 / dy^2
+    H1[1][2] = 0 # d^2 f1 / dy dz
+    H1[2][0] = 0 # d^2 f1 / dz dx
+    H1[2][1] = 0 # d^2 f1 / dz dy
+    H1[2][2] = 0 # d^2 f1 / dz^2
 
-      x:         coordinates of the integration points 
-      w:         weights  
-      pgauss:         order of the polynomila integrated exactly 
-    """
+    H2 = np.zeros((3,3)) # x*(r-z) - y
+    H2[0][0] = 0 # d^2 f2 / dx^2
+    H2[0][1] = 0 # d^2 f2 / dx dy
+    H2[0][2] = -1 # d^2 f2 / dx dz
+    H2[1][0] = 0 # d^2 f2 / dy dx
+    H2[1][1] = 0 # d^2 f2 / dy^2
+    H2[1][2] = 0 # d^2 f2 / dy dz
+    H2[2][0] = -1 # d^2 f2 / dz dx
+    H2[2][1] = 0 # d^2 f2 / dz dy
+    H2[2][2] = 0 # d^2 f2 / dz^2
 
-    n = math.ceil((pgauss+1)/2)
-    P = jacobi(n, 0, 0)
-    x = np.sort(np.roots(P))
+    H3 = np.zeros((3,3)) # x*y - beta*z
+    H3[0][0] = 0 # d^2 f3 / dx^2
+    H3[0][1] = 1 # d^2 f3 / dx dy
+    H3[0][2] = 0 # d^2 f3 / dx dz
+    H3[1][0] = 1 # d^2 f3 / dy dx
+    H3[1][1] = 0 # d^2 f3 / dy^2
+    H3[1][2] = 0 # d^2 f3 / dy dz
+    H3[2][0] = 0 # d^2 f3 / dz dx
+    H3[2][1] = 0 # d^2 f3 / dz dy
+    H3[2][2] = 0 # d^2 f3 / dz^2
 
-    A = np.zeros((n,n))
-    for i in range(1,n+1):
-        P = jacobi(i-1,0,0)
-        A[i-1,:] = np.polyval(P,x)
-
-    r = np.zeros((n,), dtype=float)
-    r[0] = 2.0
-    w = np.linalg.solve(A,r)
-
-    # map from [-1,1] to [0,1]
-    #x = (x + 1.0)/2.0
-    #w = w/2.0
-
-    return x, w
+    return np.array([H1,H2,H3])
 
 def plegendre(x,porder):
     
@@ -102,9 +123,10 @@ def plegendre(x,porder):
     # return y,dy,ddy
     return y,dy
 
+
 if __name__ == "__main__":
 
-    porder = 3
+    porder = 2
     print('porder: ' + str(porder))
 
     # params
@@ -115,64 +137,72 @@ if __name__ == "__main__":
     # simulation parameters
     TA = 10
     TB = 5
-    dt = 0.01
+    dt = 1/100
     t = np.arange(-TB,TA+TB+1,dt)
     N = len(t)
 
     # quadrature points
-    xi, w = gaussquad1d(porder+1)
+    xi, w = scipy.special.roots_legendre(porder+1)
     Nq = len(xi)
     print("Number of quadrature points: ", str(len(xi)))
     print(str(xi))
     print("Number of quadrature weights: ", str(len(w)))
     print(str(w))
 
+    # initial conditions
+    xh = np.zeros((3,N)) # states x elements
+    cs = np.zeros((3,porder+1,N))
+    # epsilon = 10**-3
+    epsilon = 0
+    x0 = np.array([-8.67139571762,4.98065219709,25+epsilon]).T
+    xh[:,0] = x0
+    xhqx = []
+    xhqy = []
+    xhqz = []
+    tq = []
+
+    Delta = 0.04
+
     # precompute polynomials
     phi, dphi = plegendre(xi,porder)
     phi_left, dphi_left = plegendre(-1,porder) # dphi_left not used
     phi_right, dphi_right = plegendre(1,porder) # dphi_right not used
 
-    
-    mc = 100
+    xh0 = xh[:,0]
+    cguess = np.array([np.append(xh0[0],np.zeros(porder)),
+                       np.append(xh0[1],np.zeros(porder)),
+                       np.append(xh0[2],np.zeros(porder))])
 
-    xhs = np.empty((mc,3,N))
+    # integrate across elements
+    print('loop through elements')
+    for j in range(1,N): # loop across I_j's
+        t0 = t[j-1]
+        tf = t[j]
 
-    for i in range(mc):
-        np.random.seed(i)
-        dW = np.sqrt(dt) * np.random.randn(N)
-        W = np.cumsum(dW)
+        jac = jacobian(xh0)
+        hes = hessian(xh0)
 
-        # initial conditions
-        xh = np.zeros((3,N)) # states x elements
-        x0 = np.array([-8.67139571762,4.98065219709,25]).T
-        xh[:,0] = x0
+        #xpi = xp[:,i]
 
-        xh0 = xh[:,0]
-        cguess = np.array([np.append(xh0[0],np.zeros(porder)),
-                        np.append(xh0[1],np.zeros(porder)),
-                        np.append(xh0[2],np.zeros(porder))])
-        #print(cguess)
-        # integrate across elements
-        #print('loop through elements')
-        for j in range(1,N): # loop across I_j's
-            t0 = t[j-1]
-            tf = t[j]
-            #print(cguess)
-            # optimize.root can only take 1D arrays
-            cguess = np.reshape(cguess,(3*(porder+1),)) # reshape from (states x p+1) to (states*(p+1) x 1)
-            c = scipy.optimize.root(resid, cguess, args=(xh0,)).x # solve residual function above
-            c = np.reshape(c,(3,porder+1)) # reshape back to (states x p+1)
-            #print(c)
-            # compute xh
-            xh[:,j] = (np.vstack([phi_right @ c[0,:],phi_right @ c[1,:],phi_right @ c[2,:]])).T
-            cguess = c
-            xh0 = xh[:,j]
-        
-        xhs[i,:,:] = xh
+        xpi = np.array([np.random.randn(),np.random.randn(),np.random.randn()])
 
-    E_xh = np.mean(xhs,0)
+        s_model = 0.5*np.matmul(np.matmul(xpi.T,hes + (Delta**2)/12 * jac.T * hes * jac),xpi)
 
-    np.savez('dg_stochastic_lorenz_dt100_p3', E_xh=E_xh)
+        cguess = np.reshape(cguess,(3*(porder+1),)) # reshape from (states x p+1) to (states*(p+1) x 1)
+        c = scipy.optimize.root(resid, cguess, args=(xh0,)).x # solve residual function above
+        c = np.reshape(c,(3,porder+1)) # reshape back to (states x p+1)
+        xhqx = np.append(xhqx,phi @ c[0,:])
+        xhqy = np.append(xhqy,phi @ c[1,:])
+        xhqz = np.append(xhqz,phi @ c[2,:])
+        tq = np.append(tq,dt*xi/2 + (t0+tf)/2)
+        cs[:,:,j] = c
+        # compute xh
+        xh[:,j] = (np.vstack([phi_right @ c[0,:],phi_right @ c[1,:],phi_right @ c[2,:]])).T
+        cguess = c
+        xh0 = xh[:,j]
+
+
+    np.savez('dg_stochastic_lorenz_dt100_p'+str(porder), xh=xh, cs=cs, t=t, Delta=Delta)
 
 
 

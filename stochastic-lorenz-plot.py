@@ -1,6 +1,4 @@
-# plotting script for stochastic Lorenz attractor
-
-# plotting script for Lorenz attractor
+# OLD
 
 import sys
 import os

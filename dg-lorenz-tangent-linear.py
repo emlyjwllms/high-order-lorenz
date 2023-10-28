@@ -147,6 +147,7 @@ if __name__ == "__main__":
     cs_tilde = np.zeros((3,porder+1,N))
     epsilon = 10e-3
     x0_tilde = np.array([epsilon,epsilon,epsilon]).T
+    #x0_tilde = x0
     xh_tilde[:,0] = x0_tilde
     xhqx_tilde = []
     xhqy_tilde = []

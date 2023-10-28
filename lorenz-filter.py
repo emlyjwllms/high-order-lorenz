@@ -152,8 +152,8 @@ if __name__ == "__main__":
 
     plots = True
 
-    widths = np.array([0.02,0.04,0.1,0.2,0.4,1])
-    #widths = np.array([0.04])
+    #widths = np.array([0.02,0.04,0.1,0.2,0.4,1])
+    widths = np.array([0.04])
 
     fig3 = plt.figure(figsize=(12,10))
     ax311 = fig3.add_subplot(3,2,1)
@@ -240,8 +240,8 @@ if __name__ == "__main__":
     
             # plot filtered states: x, xbar, x'
 
-            fig1 = plt.figure(figsize=(20,10))
-            ax1 = fig1.add_subplot(3,3,1)
+            fig1 = plt.figure(figsize=(10,4))
+            ax1 = fig1.add_subplot(2,3,1)
             ax1.plot(t[el:-el],xh[0,el:-el],label=r"$\mathbf{x}$")
             ax1.plot(t[el:-el],xbar[0,el:-el],label=r"$\overline{\mathbf{x}}$")
             ax1.plot(t[el:-el],xp[0,el:-el],label=r"${\mathbf{x'}}$")
@@ -249,125 +249,132 @@ if __name__ == "__main__":
             ax1.legend(loc='upper left')
             ax1.grid()
 
-            ax2 = fig1.add_subplot(3,3,4)
+            ax2 = fig1.add_subplot(2,3,2)
             ax2.plot(t[el:-el],xh[1,el:-el],label=r"$\mathbf{x}$")
             ax2.plot(t[el:-el],xbar[1,el:-el],label=r"$\overline{\mathbf{x}}$")
             ax2.plot(t[el:-el],xp[1,el:-el],label=r"${\mathbf{x'}}$")
             ax2.set_ylabel(r"$y$")
             ax2.grid()
 
-            ax3 = fig1.add_subplot(3,3,7)
+            ax3 = fig1.add_subplot(2,3,3)
             ax3.plot(t[el:-el],xh[2,el:-el],label=r"$\mathbf{x}$")
             ax3.plot(t[el:-el],xbar[2,el:-el],label=r"$\overline{\mathbf{x}}$")
             ax3.plot(t[el:-el],xp[2,el:-el],label=r"${\mathbf{x'}}$")
             ax3.set_ylabel(r"$z$")
-            ax3.set_xlabel(r"$t$")
             ax3.grid()
 
             # plot filtered dynamics: f(x), f(xbar), fbar(x)
 
-            ax1 = fig1.add_subplot(3,3,2)
-            ax1.plot(t[el:-el],fx[0,el:-el],label=r"$\mathbf{f}(\mathbf{x})$")
-            ax1.plot(t[el:-el],fxbar[0,el:-el],label=r"$\mathbf{f}(\overline{\mathbf{x}})$")
-            ax1.plot(t[el:-el],fbar[0,el:-el],label=r"$\overline{\mathbf{f}(\mathbf{x})}$")
-            ax1.set_ylabel(r"$\mathbf{f}_1$")
-            ax1.legend(loc='upper left')
-            ax1.set_title(r"$\Delta = $" + str(Delta))
-            ax1.grid()
+            # ax1 = fig1.add_subplot(3,3,2)
+            # ax1.plot(t[el:-el],fx[0,el:-el],label=r"$\mathbf{f}(\mathbf{x})$")
+            # ax1.plot(t[el:-el],fxbar[0,el:-el],label=r"$\mathbf{f}(\overline{\mathbf{x}})$")
+            # ax1.plot(t[el:-el],fbar[0,el:-el],label=r"$\overline{\mathbf{f}(\mathbf{x})}$")
+            # ax1.set_ylabel(r"$\mathbf{f}_x$")
+            # ax1.legend(loc='upper left')
+            # ax1.set_title(r"$\Delta = $" + str(Delta))
+            # ax1.grid()
 
-            ax2 = fig1.add_subplot(3,3,5)
-            ax2.plot(t[el:-el],fx[1,el:-el],label=r"$\mathbf{f}(\mathbf{x})$")
-            ax2.plot(t[el:-el],fxbar[1,el:-el],label=r"$\mathbf{f}(\overline{\mathbf{x}})$")
-            ax2.plot(t[el:-el],fbar[1,el:-el],label=r"$\overline{\mathbf{f}(\mathbf{x})}$")
-            ax2.set_ylabel(r"$\mathbf{f}_2$")
-            ax2.grid()
+            # ax2 = fig1.add_subplot(3,3,5)
+            # ax2.plot(t[el:-el],fx[1,el:-el],label=r"$\mathbf{f}(\mathbf{x})$")
+            # ax2.plot(t[el:-el],fxbar[1,el:-el],label=r"$\mathbf{f}(\overline{\mathbf{x}})$")
+            # ax2.plot(t[el:-el],fbar[1,el:-el],label=r"$\overline{\mathbf{f}(\mathbf{x})}$")
+            # ax2.set_ylabel(r"$\mathbf{f}_y$")
+            # ax2.grid()
 
-            ax3 = fig1.add_subplot(3,3,8)
-            ax3.plot(t[el:-el],fx[2,el:-el],label=r"$\mathbf{f}(\mathbf{x})$")
-            ax3.plot(t[el:-el],fxbar[2,el:-el],label=r"$\mathbf{f}(\overline{\mathbf{x}})$")
-            ax3.plot(t[el:-el],fbar[2,el:-el],label=r"$\overline{\mathbf{f}(\mathbf{x})}$")
-            ax3.set_ylabel(r"$\mathbf{f}_3$")
-            ax3.set_xlabel(r"$t$")
-            ax3.grid()
+            # ax3 = fig1.add_subplot(3,3,8)
+            # ax3.plot(t[el:-el],fx[2,el:-el],label=r"$\mathbf{f}(\mathbf{x})$")
+            # ax3.plot(t[el:-el],fxbar[2,el:-el],label=r"$\mathbf{f}(\overline{\mathbf{x}})$")
+            # ax3.plot(t[el:-el],fbar[2,el:-el],label=r"$\overline{\mathbf{f}(\mathbf{x})}$")
+            # ax3.set_ylabel(r"$\mathbf{f}_z$")
+            # ax3.set_xlabel(r"$t$")
+            # ax3.grid()
 
             # plot subgrid dynamics
 
-            ax1 = fig1.add_subplot(3,3,3)
+            ax1 = fig1.add_subplot(2,3,4)
             ax1.plot(t[el:-el],s[0,el:-el])
-            ax1.set_ylabel(r"$\mathbf{s}_1$")
+            ax1.set_ylabel(r"$\mathbf{s}_x$")
             #ax1.set_title("subgrid dynamics")
             ax1.set_yticks(np.array([-1,-0.5,0,0.5,1]))
             ax1.grid()
+            ax1.set_xlabel(r"$t$")
 
-            ax2 = fig1.add_subplot(3,3,6)
+            ax2 = fig1.add_subplot(2,3,5)
             ax2.plot(t[el:-el],s[1,el:-el])
-            ax2.set_ylabel(r"$\mathbf{s}_2$")
+            ax2.set_ylabel(r"$\mathbf{s}_y$")
             ax2.grid()
+            ax2.set_xlabel(r"$t$")
 
-            ax3 = fig1.add_subplot(3,3,9)
+            ax3 = fig1.add_subplot(2,3,6)
             ax3.plot(t[el:-el],s[2,el:-el])
-            ax3.set_ylabel(r"$\mathbf{s}_3$")
+            ax3.set_ylabel(r"$\mathbf{s}_z$")
             ax3.set_xlabel(r"$t$")
             ax3.grid()
 
-            plt.savefig('plots/lorenz-filter-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+            fig1.tight_layout()
+
+            #plt.savefig('plots/lorenz-filter-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
             # plot subgrid model vs exact
 
-            fig4 = plt.figure(figsize=(8,8))
-            ax1 = fig4.add_subplot(3,1,1)
+            fig4 = plt.figure(figsize=(10,4))
+            ax1 = fig4.add_subplot(2,3,1)
             ax1.plot(t[el:-el],s[0,el:-el],label=r"$\mathbf{s}$")
-            ax1.plot(t[el:-el],s_model[0,el:-el],label=r"$\mathbf{s}_{model}$")
-            ax1.plot(t[el:-el],s_random[0,el:-el],label=r"$\mathbf{s}_{random}$",zorder=1)
-            ax1.set_ylabel(r"$\mathbf{s}_1$")
-            ax1.set_title(r"$\Delta t$ = " + str(round(dt,3)) + ", $\Delta$ = " + str(Delta) + ", $p$ = " + str(porder))
+            ax1.plot(t[el:-el],s_model[0,el:-el],label=r"$\mathbf{s}_{\mathrm{model}}$")
+            #ax1.plot(t[el:-el],s_random[0,el:-el],label=r"$\mathbf{s}_{random}$",zorder=1)
+            ax1.set_ylabel(r"$\mathbf{s}_x$")
+            #ax1.set_title(r"$\Delta t$ = " + str(round(dt,3)) + ", $\Delta$ = " + str(Delta) + ", $p$ = " + str(porder))
             ax1.set_yticks(np.array([-1,-0.5,0,0.5,1]))
             ax1.legend()
             ax1.grid()
 
-            ax2 = fig4.add_subplot(3,1,2)
+            ax2 = fig4.add_subplot(2,3,2)
             ax2.plot(t[el:-el],s[1,el:-el])
             ax2.plot(t[el:-el],s_model[1,el:-el])
-            ax2.plot(t[el:-el],s_random[1,el:-el],zorder=1)
-            ax2.set_ylabel(r"$\mathbf{s}_2$")
+            #ax2.plot(t[el:-el],s_random[1,el:-el],zorder=1)
+            ax2.set_ylabel(r"$\mathbf{s}_y$")
             ax2.grid()
 
-            ax3 = fig4.add_subplot(3,1,3)
+            ax3 = fig4.add_subplot(2,3,3)
             ax3.plot(t[el:-el],s[2,el:-el])
             ax3.plot(t[el:-el],s_model[2,el:-el])
-            ax3.plot(t[el:-el],s_random[2,el:-el],zorder=1)
-            ax3.set_ylabel(r"$\mathbf{s}_3$")
-            ax3.set_xlabel(r"$t$")
+            #ax3.plot(t[el:-el],s_random[2,el:-el],zorder=1)
+            ax3.set_ylabel(r"$\mathbf{s}_z$")
+            #ax3.set_xlabel(r"$t$")
             ax3.grid()
 
-            plt.savefig('plots/lorenz-s-model-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+            #plt.savefig('plots/lorenz-s-model-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
             # plot reconstructed dynamics from random model
 
-            fig44 = plt.figure(figsize=(8,8))
-            ax1 = fig44.add_subplot(3,1,1)
-            ax1.plot(t[el:-el],s_random[0,el:-el] + fxbar[0,el:-el],label=r"$\overline{\mathbf{f}}_{random}$")
-            ax1.plot(t[el:-el],s_model[0,el:-el] + fxbar[0,el:-el],label=r"$\overline{\mathbf{f}}_{model}$")
-            ax1.plot(t[el:-el],fbar[0,el:-el],label=r"$\overline{\mathbf{f}}$")
-            ax1.set_ylabel(r"$\overline{\mathbf{f}}_1$")
-            ax1.set_title(r"$\mathbf{s} + \mathbf{f}(\overline{\mathbf{x}}) = \overline{\mathbf{f}}$")
-            ax1.legend()
-            ax1.grid()
+            fig44 = plt.figure(figsize=(4,5))
+            ax111 = fig44.add_subplot(3,1,1)
+            #ax1.plot(t[el:-el],s_random[0,el:-el] + fxbar[0,el:-el],label=r"$\overline{\mathbf{f}}_{random}$")
+            ax111.plot(t[el:-el],fbar[0,el:-el],label=r"$\overline{\mathbf{f}}$")
+            ax111.plot(t[el:-el],s_random[0,el:-el] + fxbar[0,el:-el],label=r"$\overline{\mathbf{f}}_{\mathrm{model}}$")
+            ax111.set_ylabel(r"$\overline{\mathbf{f}}_x$")
+            #ax111.set_title(r"$\mathbf{s} + \mathbf{f}(\overline{\mathbf{x}}) = \overline{\mathbf{f}}$")
+            #ax111.set_xlabel(r"$t$")
+            ax111.legend()
+            ax111.grid()
 
-            ax2 = fig44.add_subplot(3,1,2)
-            ax2.plot(t[el:-el],s_random[1,el:-el] + fxbar[1,el:-el])
-            ax2.plot(t[el:-el],s_model[1,el:-el] + fxbar[1,el:-el])
-            ax2.plot(t[el:-el],fbar[1,el:-el])
-            ax2.set_ylabel(r"$\overline{\mathbf{f}}_2$")
-            ax2.grid()
+            ax211 = fig44.add_subplot(3,1,2)
+            #ax2.plot(t[el:-el],s_random[1,el:-el] + fxbar[1,el:-el])
+            ax211.plot(t[el:-el],fbar[1,el:-el])
+            ax211.plot(t[el:-el],s_random[1,el:-el] + fxbar[1,el:-el])
+            ax211.set_ylabel(r"$\overline{\mathbf{f}}_y$")
+            #ax211.set_xlabel(r"$t$")
+            ax211.grid()
 
-            ax3 = fig44.add_subplot(3,1,3)
-            ax3.plot(t[el:-el],s_random[2,el:-el] + fxbar[2,el:-el])
-            ax3.plot(t[el:-el],s_model[2,el:-el] + fxbar[2,el:-el])
-            ax3.plot(t[el:-el],fbar[2,el:-el])
-            ax3.set_ylabel(r"$\overline{\mathbf{f}}_3$")
-            ax3.set_xlabel(r"$t$")
-            ax3.grid()
+            ax3111 = fig44.add_subplot(3,1,3)
+            #ax3.plot(t[el:-el],s_random[2,el:-el] + fxbar[2,el:-el])
+            ax3111.plot(t[el:-el],fbar[2,el:-el])
+            ax3111.plot(t[el:-el],s_random[2,el:-el] + fxbar[2,el:-el])
+            ax3111.set_ylabel(r"$\overline{\mathbf{f}}_z$")
+            ax3111.set_xlabel(r"$t$")
+            ax3111.grid()
+
+            fig44.tight_layout()
 
             plt.savefig('plots/lorenz-fbar-model-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
@@ -419,7 +426,7 @@ if __name__ == "__main__":
             ax32.set_zlabel(r"$\overline{\mathbf{x}}_3$")
             fig2.colorbar(p,shrink=0.5,pad=0.3,ax=ax32,label=r"$\mathbf{x'}_3$")
 
-            plt.savefig('plots/lorenz-sgs-xp-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+            #plt.savefig('plots/lorenz-sgs-xp-' + str(Delta) + '.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
             #plt.show()
 
@@ -450,7 +457,7 @@ if __name__ == "__main__":
         ax332.set_ylabel(r"$\mathbf{x'}_3$")
         ax332.grid()
 
-        fig3.savefig('plots/lorenz-sgs-xp-del.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+        #fig3.savefig('plots/lorenz-sgs-xp-del.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
         if Delta == 0.02 or Delta == 0.2:
 
@@ -487,7 +494,7 @@ if __name__ == "__main__":
             ax3329.grid()
 
             ax3119.legend()
-            fig39.savefig('plots/lorenz-sgs-xp-del-normalized.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+            #fig39.savefig('plots/lorenz-sgs-xp-del-normalized.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
 
 
@@ -598,7 +605,7 @@ if __name__ == "__main__":
 
         ax41.grid()
 
-        fig55.savefig('plots/lorenz-Delta-xp-fbar-s-L2-sqrt.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+        #fig55.savefig('plots/lorenz-Delta-xp-fbar-s-L2-sqrt.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
 
     ax3311.set_ylabel(r"${\mathbf{x'}_1}$")
@@ -630,9 +637,9 @@ if __name__ == "__main__":
     if Delta == 1:
         ax3311.legend()
 
-    fig33.savefig('plots/lorenz-Delta-xp-fbar-s.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+    #fig33.savefig('plots/lorenz-Delta-xp-fbar-s.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
 
-    #plt.show()
+    plt.show()
 
 
 
