@@ -22,20 +22,23 @@ dt_train = dt_train[::2,:]
 
 N = np.shape(x_EMs_n_train)[0]
 
-# regularization
-lamb = 0
-order = 2
+# # regularization
+# lamb = 0
+# order = 2
 
-# Carry out training
-def loss(w):
-   L = 0
-   for i in range(N):
-      L +=  # + lamb*norm(w,ord=order)
-   L = -1/N * L
-   return L
+# # Carry out training
+# def loss(w):
+#    L = 0
+#    for i in range(N):
+#       L +=  # + lamb*norm(w,ord=order)
+#    L = -1/N * L
+#    return L
 
-w0 = np.ones(N)
-w = minimize(loss,w0).x
+# w0 = np.ones(N)
+# w = minimize(loss,w0).x
+
+# we won't need the above function if we use a built-in NN code
+# also, there are python ML packages that can split the data into training and testing sets, maybe consider using that instead of the way I split it up?
 
 # Compute training accuracy
 
