@@ -12,15 +12,18 @@ from scipy.optimize import minimize
 from scipy.linalg import norm
 
 training_data = np.load('diffusion-training-data.npz')
-x_EMs_n_data = training_data['x_EMs_n']
-x_EMs_np1_data = training_data['x_EMs_np1']
-dt_train = training_data['dt_train']
+x_ns = training_data['x_n']
+x_np1s = training_data['x_np1']
+dts = training_data['dt_train']
+alpha_train = training_data['alpha_train']
+lambda_max = 0.95
+mu_train = alpha_train*np.sqrt(2*lambda_max)
 
-x_EMs_n_train = x_EMs_n_data[::2,:]
-x_EMs_np1_train = x_EMs_np1_data[::2,:]
-dt_train = dt_train[::2,:]
+x_n_train = x_ns[::2,:]
+x_np1_train = x_np1s[::2,:]
+dt_train = dts[::2]
 
-N = np.shape(x_EMs_n_train)[0]
+N = np.shape(x_n_train)[0]
 
 # # regularization
 # lamb = 0
@@ -45,11 +48,11 @@ N = np.shape(x_EMs_n_train)[0]
 
 # Compute testing accuracy of the predictions of your model
 
-x_EMs_n_test = x_EMs_n_data[1::2,:]
-x_EMs_np1_test = x_EMs_np1_data[1::2,:]
-dt_test = dt_train[1::2,:]
+x_n_test = x_ns[1::2,:]
+x_np1_test = x_np1s[1::2,:]
+dt_test = dts[1::2]
 
-N = np.shape(x_EMs_n_test)[0]
+N = np.shape(x_n_test)[0]
 
 
 
