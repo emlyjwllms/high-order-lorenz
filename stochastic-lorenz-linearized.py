@@ -36,12 +36,9 @@ def dfdx(xv):
     J[2][2] = -beta # df3/dz
     return J
 
-def naive_model(alpha, stabilize, lambda_max = 0.95):
-    if stabilize:
-        mu = alpha * np.sqrt(2*lambda_max)
-    else:
-        mu = 0
-    return mu*xtilde[n,:]*dW[n]
+def naive_model(alpha, lambda_max = 0.95):
+    mu = alpha * np.sqrt(2*lambda_max)
+    return mu*xtilde[n,:]
 
 if __name__ == "__main__":
     # nonlinear ODE - lorenz system
@@ -52,9 +49,6 @@ if __name__ == "__main__":
     sigma = 10
     r = 28
     beta = 8/3
-
-    ############### STABILIZE
-    stabilize = True
 
     # simulation parameters
     TA = 10
@@ -77,8 +71,9 @@ if __name__ == "__main__":
         # Euler-Maruyama method
         x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
-        alpha = 1.5
-        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha,stabilize)
+        # set alpha = 0 to be unstable
+        alpha = 1.0
+        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
 
 
     plt.figure(1)
@@ -98,7 +93,7 @@ if __name__ == "__main__":
     plt.xlabel("t")
     plt.title(r"$\alpha$ = " + str(alpha))
     plt.ylabel(r"$\tilde{\mathbf{x}}$")
-    if not stabilize:
+    if alpha == 0:
         plt.ylim(-200,200)
     plt.legend()
     plt.grid()
