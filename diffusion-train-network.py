@@ -11,7 +11,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import norm
 
-training_data = np.load('diffusion-training-data.npz')
+training_data = np.load('diffusion-training-data-init.npz')
 x_ns = training_data['x_n']
 x_np1s = training_data['x_np1']
 dts = training_data['dt_train']
