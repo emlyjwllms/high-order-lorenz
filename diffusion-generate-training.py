@@ -51,8 +51,8 @@ if __name__ == "__main__":
     r = 28
     beta = 8/3
 
-    dts = np.array([0.01,0.005,0.001])
-    x0s = np.array([0.5,0.6,0.7,0.8,0.9]) # factor in front of the perturbation
+    #dts = np.array([0.01,0.005,0.001])
+    #x0s = np.array([0.5,0.6,0.7,0.8,0.9]) # factor in front of the perturbation
 
     x_n = []
     x_np1 = []
@@ -60,67 +60,69 @@ if __name__ == "__main__":
     alpha_train = []
 
     i = 0
+    print(i)
+    while i <= 1000: # generate 100 samples
+        #for dt in dts:
 
-    while i <= 100: # generate 100 samples
-        for dt in dts:
+        # simulation parameters for global problem (need to check stability criterion)
+        TA = 10
+        TB = 5
+        dt = np.random.uniform(0.01,0.001)
+        t = np.arange(-TB,TA+TB+1,dt)
+        N = len(t)
 
-            # simulation parameters for global problem (need to check stability criterion)
-            TA = 10
-            TB = 5
-            t = np.arange(-TB,TA+TB+1,dt)
-            N = len(t)
+            #for x0 in x0s:
 
-            for x0 in x0s:
+        # initial conditions
+        x_EM = np.zeros((N,3))
+        x_EM[0,:] = [-8.67139571762,4.98065219709,25]
 
-                # initial conditions
-                x_EM = np.zeros((N,3))
-                x_EM[0,:] = [-8.67139571762,4.98065219709,25]
+        xtilde = np.zeros((N,3))
+        x0 = np.random.uniform(0.1,1)
+        xtilde[0,:] = x0 * np.array([1,1,1])
 
-                xtilde = np.zeros((N,3))
-                xtilde[0,:] = x0 * np.array([1,1,1])
-
-                # randomly select alpha with mean 1.25 and std 0.1 (edge case of stability basically - will give us values >= 1 most of the time)
-                alpha = np.random.normal(1.25,0.1)
+        # randomly select alpha with mean 1.25 and std 0.1 (edge case of stability basically - will give us values >= 1 most of the time)
+        alpha = np.random.normal(1.25,0.1)
+        
+        # if 80% (4/5) of runs are stable, keep the triple (x0,x1,dt) and alpha
+        jj = 0
+        for c in range(5):
+            # time integration
+            for n in range(N-1):
                 
-                # if 80% (4/5) of runs are stable, keep the triple (x0,x1,dt) and alpha
-                jj = 0
-                for c in range(5):
-                    # time integration
-                    for n in range(N-1):
-                        
-                        tn = t[n]
-                        dW = np.sqrt(dt) * np.random.randn(N)
+                tn = t[n]
+                dW = np.sqrt(dt) * np.random.randn(N)
 
-                        # Euler-Maruyama method
-                        x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
+                # Euler-Maruyama method
+                x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
-                        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
+                xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
 
-                    # check stability criterion log(abs(xtilde)) <= 1 for last half of the trajectory
-                    if np.max(np.log(np.abs(xtilde[int(N/2):,:]))) <= 1:
-                        jj += 1
-                        xtilde_np1 = xtilde[1,:] # save (one of) the stable cases
+            # check stability criterion log(abs(xtilde)) <= 1 for last half of the trajectory
+            if np.max(np.log(np.abs(xtilde[int(N/2):,:]))) <= 1:
+                jj += 1
+                xtilde_np1 = xtilde[1,:] # save (one of) the stable cases
 
-                if jj >= 4:
-                    # add to training set
-                    x_n.append(xtilde[0,:]) # save x0
-                    x_np1.append(xtilde_np1) # save x1
-                    dt_train.append(dt) # save dt
-                    alpha_train.append(alpha) # save alpha
+        if jj >= 4:
+            # add to training set
+            x_n.append(xtilde[0,:]) # save x0
+            x_np1.append(xtilde_np1) # save x1
+            dt_train.append(dt) # save dt
+            alpha_train.append(alpha) # save alpha
 
-                    # plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}$")
-                    # plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}$")
-                    # plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}$")
-                    # plt.xlabel("t")
-                    # plt.yscale("log")
-                    # plt.title(r"$\alpha$ = " + str(alpha))
-                    # plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
-                    # plt.legend()
-                    # plt.grid()
-                    # plt.show()
+            # plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}$")
+            # plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}$")
+            # plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}$")
+            # plt.xlabel("t")
+            # plt.yscale("log")
+            # plt.title(r"$\alpha$ = " + str(alpha))
+            # plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
+            # plt.legend()
+            # plt.grid()
+            # plt.show()
 
-                    print(str(xtilde[0,:]) + ", dt = " + str(dt) + ", alpha = " + str(alpha))
-                    i += 1
+            print(str(xtilde[0,:]) + ", dt = " + str(dt) + ", alpha = " + str(alpha) + ", i = " + str(i))
+            i += 1
 
 
     np.savez('diffusion-training-data', x_n=x_n, x_np1=x_np1, dt_train=dt_train, alpha_train=alpha_train)

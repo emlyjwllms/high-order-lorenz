@@ -11,7 +11,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import norm
 
-training_data = np.load('diffusion-training-data-init.npz')
+training_data = np.load('diffusion-training-data.npz')
 x_ns = training_data['x_n']
 x_np1s = training_data['x_np1']
 dts = training_data['dt_train']
@@ -24,6 +24,10 @@ x_np1_train = x_np1s[::2,:]
 dt_train = dts[::2]
 
 N = np.shape(x_n_train)[0]
+print(N)
+print(x_ns[0,:])
+print(dts[0])
+print(alpha_train[0])
 
 # # regularization
 # lamb = 0
