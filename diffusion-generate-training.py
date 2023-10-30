@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     i = 0
     print(i)
-    while i <= 1000: # generate 100 samples
+    while i <= 1000: # generate 1000 samples
         #for dt in dts:
 
         # simulation parameters for global problem (need to check stability criterion)

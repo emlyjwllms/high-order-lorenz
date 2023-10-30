@@ -10,7 +10,10 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 
-from diffusion-generate-training import dfdx
+import importlib
+
+# had to use this because the module has '-' in its name lol
+dfdx = importlib.import_module('diffusion-generate-training').dfdx
 
 class ResNetModel:
 
@@ -23,15 +26,9 @@ class ResNetModel:
         self.x0 = inputs[:, :3]
         self.dt = inputs[:, 3:4]
 
-        # Some residual layers (this attempts to learn the residual function)
-        x = layers.Dense(256, activation="relu")(inputs)
-        x = layers.Dense(128, activation="relu")(x)
-        x = layers.Dense(64, activation="relu")(x)
-        x = layers.Dense(32, activation="relu")(x)
-
         # Compute drift term explicitly
         
-        J = self.tf_jacobian_function(self.x0)
+        J = self.tf_dfdx(self.x0)
         
         # Reshape x0 to [batch_size, 3, 1]
         x0_reshaped = tf.reshape(self.x0, [-1, 3, 1])
@@ -42,10 +39,11 @@ class ResNetModel:
         # Reshape the result back to [batch_size, 3]
         drift = tf.reshape(drift, [-1, 3])
         
-        drift_term = drift*self.dt
+        # Compute the drift term and save it as member to use in the loss function
+        self.drift_term = drift*self.dt
         
         # Network for sigma_theta
-        sigma_theta_layer = layers.Dense(256, activation="relu")(x)
+        sigma_theta_layer = layers.Dense(256, activation="relu")(inputs)
         sigma_theta_layer = layers.Dense(128, activation="relu")(sigma_theta_layer)
         sigma_theta_layer = layers.Dense(64, activation="relu")(sigma_theta_layer)
         sigma_theta_layer = layers.Dense(32, activation="relu")(sigma_theta_layer)
@@ -59,51 +57,65 @@ class ResNetModel:
         
         diffusion_term = sigma_theta_diag * random_noise
 
-        # Apply identity map + residual function
-        outputs = self.x0 + drift_term + diffusion_term
+        # Apply identity map + drift + residual function
+        outputs = self.x0 + self.drift_term + diffusion_term
 
         self.model = Model(inputs=inputs, outputs=outputs)
         
     def compile(self, optimizer):
+        
         self.model.compile(optimizer=optimizer, loss=self.loss_function)
 
-    def train(self, x_train, y_train, epochs, batch_size):
-        self.model.fit(x_train, y_train, epochs=epochs, batch_size=batch_size)
+    def train(self, dataset, epochs):
+        
+        self.model.fit(dataset, epochs=epochs)
 
     def predict(self, x):
+        
         return self.model.predict(x)
     
-    def tf_jacobian_function(self,x_tensor):
-        
-        # Wrap the Jacobian function with tf.numpy_function
-        J_tensor = tf.numpy_function(dfdx, [x_tensor], tf.float32)
-        
-        # Set the shape of the output tensor
-        batch_size = tf.shape(x_tensor)[0]
-        
-        J_tensor.set_shape((batch_size, 3, 3))
-        
-        return J_tensor
     
     def loss_function(self,y_true,y_pred):
     
         # Invert the diagonal values
-        sigma_inv_diag = 1.0 / sigma_theta
+        sigma_inv_diag = 1.0 / (self.dt*self.sigma_theta)
 
-        x = # i'll figure out in a bit
-        mu = # i'll figure out in a bit
+        x = y_true
+        mu = self.x0 + self.drift_term
         
         diff = x - mu
 
-        term1 = tf.reduce_sum(tf.multiply(diff, sigma_inv_diag*diff)), axis=-1)
+        term1 = tf.reduce_sum(tf.multiply(diff, sigma_inv_diag*diff), axis=-1)
         
-        det_sigma = tf.reduce_prod(sigma_theta_diag, axis=-1)
+        det_sigma = tf.reduce_prod(self.sigma_theta, axis=-1)
         
-        term2 = tf.math.log(det_sigma)
+        term2 = tf.math.log(self.dt*det_sigma)
         
         # Construct the loss
         loss = -0.5 * 3 * tf.math.log(2.0 * np.pi) - 0.5 * term2 - 0.5 * term1
 
         return tf.reduce_mean(loss)
+    
+    def tf_dfdx(self,xv):
+        
+        # Jacobian matrix using TF operations
+        
+        sigma_tensor = tf.constant(10.0, dtype=tf.float32)
+        r_tensor = tf.constant(28.0, dtype=tf.float32)
+        beta_tensor = tf.constant(8.0/3.0, dtype=tf.float32)
+    
+        x, y, z = xv[:, 0], xv[:, 1], xv[:, 2]
+    
+        # Create the Jacobian matrices
+        Jx = [tf.negative(sigma_tensor)*tf.ones_like(x), sigma_tensor*tf.ones_like(x), tf.constant(0.0, dtype=tf.float32)*tf.ones_like(x)]
+        Jy = [r_tensor - z, tf.constant(-1.0, dtype=tf.float32)*tf.ones_like(y), tf.negative(x)]
+        Jz = [y, x, tf.negative(beta_tensor)*tf.ones_like(z)]
+    
+        J = tf.stack([Jx, Jy, Jz], axis=2)
+    
+        # Ensure the J matrix has the expected shape of (batch_size, 3, 3)
+        J = tf.transpose(J, perm=[2, 0, 1])
+    
+        return J
 
 
