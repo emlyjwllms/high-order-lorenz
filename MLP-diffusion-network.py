@@ -23,15 +23,15 @@ class MLP_diff_NN(tf.Module):
         # and then each layer contains twice as much as the next one
         self.neurons_per_layer = np.zeros(n_hlayers,dtype=int)
         
-        for i in range(len(neurons_per_layer)):
+        for i in range(len(self.neurons_per_layer)):
             
-            neurons_per_layer[i] = int(2**(n_hlayers + p - (i + 1)))
+            self.neurons_per_layer[i] = int(2**(n_hlayers + 5 - (i + 1)))
             
         # creates the hidden layer    
         self.h_layers = []
         for i in range(n_hlayers):
             
-            neurons = neurons_per_layer[i]
+            neurons = self.neurons_per_layer[i]
             activation = tf.nn.relu # use ReLU activation
             layer = tf.keras.layers.Dense(neurons,activation)
             self.h_layers.append(layer)
