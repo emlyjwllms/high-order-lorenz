@@ -10,10 +10,6 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 
-import importlib
-
-# had to use this because the module has '-' in its name lol
-dfdx = importlib.import_module('diffusion-generate-training').dfdx
 
 class ResNetModel:
 

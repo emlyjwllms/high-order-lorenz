@@ -36,11 +36,9 @@ class MLP_diff_NN(tf.Module):
             layer = tf.keras.layers.Dense(neurons,activation)
             self.h_layers.append(layer)
             
-        assert(len(self.h_layers) == n_hlayers), "Hidden layers construction failed"
-        
         self.n_hlayers = n_hlayers
         
-        # creates that output layer
+        # creates the output layer
         self.out = tf.keras.layers.Dense(3) # output dimension is three for Lorentz Eqs.
     
     # overloads operator()        
@@ -59,11 +57,11 @@ class MLP_diff_NN(tf.Module):
         return tf.reduce_mean(tf.square(predicted_X1 - true_X1))
 
     # define the gradient using TF automatic diff
-    def compute_gradients(model, train_X0, train_X1):
+    def compute_gradients(self, train_X0, train_X1):
         
         with tf.GradientTape() as tape:
             
-            predicted_X1 = self.call(train_X0)
+            predicted_X1 = self(train_X0)
             
             loss = self.compute_loss(predicted_X1, train_X1)
             
