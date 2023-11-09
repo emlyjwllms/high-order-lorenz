@@ -36,11 +36,6 @@ def dfdx(xv):
     J[2][2] = -beta # df3/dz
     return J
 
-def naive_model(alpha, lambda_max = 0.95):
-    mu = alpha * np.sqrt(2*lambda_max)
-    return mu*xtilde[n,:]
-
-
 if __name__ == "__main__":
     # nonlinear ODE - lorenz system
     # xdot = f(x)
@@ -51,78 +46,32 @@ if __name__ == "__main__":
     r = 28
     beta = 8/3
 
-    #dts = np.array([0.01,0.005,0.001])
-    #x0s = np.array([0.5,0.6,0.7,0.8,0.9]) # factor in front of the perturbation
+    porder = 2
 
-    x_n = []
-    x_np1 = []
-    dt_train = []
-    alpha_train = []
+    lorenz = np.load('dg_lorenz_dt100_p' + str(porder) + '.npz')
 
-    i = 0
-    print(i)
-    while i <= 1000: # generate 1000 samples
-        #for dt in dts:
+    xh = lorenz['xh'].T
+    cs = lorenz['cs']
+    t = lorenz['t']
+    dt = t[1]-t[0]
 
-        # simulation parameters for global problem (need to check stability criterion)
-        TA = 10
-        TB = 5
-        dt = np.random.uniform(0.01,0.001)
-        t = np.arange(-TB,TA+TB+1,dt)
-        N = len(t)
+    N = len(t)
 
-            #for x0 in x0s:
+    K = 1000 # number of training samples
+    epsilon = 10e-3
 
-        # initial conditions
-        x_EM = np.zeros((N,3))
-        x_EM[0,:] = [-8.67139571762,4.98065219709,25]
+    x_n = np.zeros((N-1,3))
+    x_np1 = np.zeros((N-1,3))
 
-        xtilde = np.zeros((N,3))
-        x0 = np.random.uniform(0.1,1)
-        xtilde[0,:] = x0 * np.array([1,1,1])
+    # loop through elements
+    print('loop through elements')
+    for n in range(1,N-1):
+        for k in range(1,K):
+            x_tilde_n_k = epsilon*np.random.randn(3)
+            x_n_k = xh[n] + x_tilde_n_k
+            x_np1_k = x_n_k + f(x_n_k)*dt
+            x_tilde_np1_k = x_np1_k - xh[n+1]
+            x_n[n,:] = x_tilde_n_k
+            x_np1[n,:] = x_tilde_np1_k
 
-        # randomly select alpha with mean 1.25 and std 0.1 (edge case of stability basically - will give us values >= 1 most of the time)
-        alpha = np.random.normal(1.25,0.1)
-        
-        # if 80% (4/5) of runs are stable, keep the triple (x0,x1,dt) and alpha
-        jj = 0
-        for c in range(5):
-            # time integration
-            for n in range(N-1):
-                
-                tn = t[n]
-                dW = np.sqrt(dt) * np.random.randn(N)
-
-                # Euler-Maruyama method
-                x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
-
-                xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
-
-            # check stability criterion log(abs(xtilde)) <= 1 for last half of the trajectory
-            if np.max(np.log(np.abs(xtilde[int(N/2):,:]))) <= 1:
-                jj += 1
-                xtilde_np1 = xtilde[1,:] # save (one of) the stable cases
-
-        if jj >= 4:
-            # add to training set
-            x_n.append(xtilde[0,:]) # save x0
-            x_np1.append(xtilde_np1) # save x1
-            dt_train.append(dt) # save dt
-            alpha_train.append(alpha) # save alpha
-
-            # plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}$")
-            # plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}$")
-            # plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}$")
-            # plt.xlabel("t")
-            # plt.yscale("log")
-            # plt.title(r"$\alpha$ = " + str(alpha))
-            # plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
-            # plt.legend()
-            # plt.grid()
-            # plt.show()
-
-            print(str(xtilde[0,:]) + ", dt = " + str(dt) + ", alpha = " + str(alpha) + ", i = " + str(i))
-            i += 1
-
-
-    np.savez('diffusion-training-data', x_n=x_n, x_np1=x_np1, dt_train=dt_train, alpha_train=alpha_train)
+    np.savez('diffusion-training-data', x_n=x_n, x_np1=x_np1)
