@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     N = len(t)
 
-    K = 1000 # number of training samples
+    K = 10000 # number of training samples
     epsilon = 10e-3
 
     x_tilde_n = np.zeros((N-1,3))
