@@ -12,11 +12,20 @@ from scipy.optimize import minimize
 from scipy.linalg import norm
 
 training_data = np.load('diffusion-training-data.npz')
-x_ns = training_data['x_n']
-x_np1s = training_data['x_np1']
+x_tilde_n = training_data['x_tilde_n']
+x_tilde_np1 = training_data['x_tilde_np1']
 
-x_n_train = x_ns[::2,:]
-x_np1_train = x_np1s[::2,:]
+x_tilde_n_train = x_tilde_n[::2,:]
+x_tilde_np1_train = x_tilde_np1[::2,:]
+
+porder = 2
+
+lorenz = np.load('dg_lorenz_dt100_p' + str(porder) + '.npz')
+
+x_n = lorenz['xh'].T
+cs = lorenz['cs']
+t = lorenz['t']
+dt = t[1]-t[0]
 
 
 # # regularization

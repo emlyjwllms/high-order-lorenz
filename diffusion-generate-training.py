@@ -60,8 +60,8 @@ if __name__ == "__main__":
     K = 1000 # number of training samples
     epsilon = 10e-3
 
-    x_n = np.zeros((N-1,3))
-    x_np1 = np.zeros((N-1,3))
+    x_tilde_n = np.zeros((N-1,3))
+    x_tilde_np1 = np.zeros((N-1,3))
 
     # loop through elements
     print('loop through elements')
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             x_n_k = xh[n] + x_tilde_n_k
             x_np1_k = x_n_k + f(x_n_k)*dt
             x_tilde_np1_k = x_np1_k - xh[n+1]
-            x_n[n,:] = x_tilde_n_k
-            x_np1[n,:] = x_tilde_np1_k
+            x_tilde_n[n,:] = x_tilde_n_k
+            x_tilde_np1[n,:] = x_tilde_np1_k
 
-    np.savez('diffusion-training-data', x_n=x_n, x_np1=x_np1)
+    np.savez('diffusion-training-data', x_tilde_n=x_tilde_n, x_tilde_np1=x_tilde_np1)
