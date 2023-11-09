@@ -15,6 +15,8 @@ training_data = np.load('diffusion-training-data.npz')
 x_tilde_n = training_data['x_tilde_n']
 x_tilde_np1 = training_data['x_tilde_np1']
 
+print(x_tilde_n.shape)
+
 x_tilde_n_train = x_tilde_n[::2,:]
 x_tilde_np1_train = x_tilde_np1[::2,:]
 
@@ -50,8 +52,8 @@ dt = t[1]-t[0]
 
 # Compute testing accuracy of the predictions of your model
 
-x_n_test = x_ns[1::2,:]
-x_np1_test = x_np1s[1::2,:]
+x_tilde_n_test = x_tilde_n[1::2,:]
+x_tilde_np1_test = x_tilde_np1[1::2,:]
 
 
 
