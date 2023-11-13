@@ -28,7 +28,7 @@ x_n = lorenz['xh'].T
 cs = lorenz['cs']
 t = lorenz['t']
 dt = t[1]-t[0]
-
+ 
 
 # # regularization
 # lamb = 0
