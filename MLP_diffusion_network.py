@@ -39,7 +39,7 @@ class MLP_diff_NN(tf.Module):
         self.n_hlayers = n_hlayers
         
         # creates the output layer
-        self.out = tf.keras.layers.Dense(3) # output dimension is three for Lorentz Eqs.
+        self.out = tf.keras.layers.Dense(3) # output dimension is three for Lorenz Eqs.
     
     # overloads operator()        
     def __call__(self, X):
