@@ -11,49 +11,119 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import norm
 
+import tensorflow as tf
+from Network_DietrichBased import (
+                                    SDEIdentification,
+                                    ModelBuilder,
+                                    SDEApproximationNetwork
+                                  )
+ 
+################################ Load data ####################################
+
 training_data = np.load('diffusion-training-data.npz')
 x_tilde_n = training_data['x_tilde_n']
 x_tilde_np1 = training_data['x_tilde_np1']
-
-print(x_tilde_n.shape)
-
-x_tilde_n_train = x_tilde_n[::2,:]
-x_tilde_np1_train = x_tilde_np1[::2,:]
 
 porder = 2
 
 lorenz = np.load('dg_lorenz_dt100_p' + str(porder) + '.npz')
 
 x_n = lorenz['xh'].T
+x_n = x_n[0:-1,:]
 cs = lorenz['cs']
 t = lorenz['t']
 dt = t[1]-t[0]
- 
 
-# # regularization
-# lamb = 0
-# order = 2
+# Prepare the input tensor
+for n_point, nominal_point in enumerate(x_n):
+    
+    xn_matrix = np.tile(nominal_point,(1000,1))
+    
+    slice_start = int(n_point*1000)
+    slice_end = int(slice_start + 1000)
+    
+    x_tilde_n_slice = x_tilde_n[slice_start:slice_end,:]
+    x_tilde_n1_slice = x_tilde_np1[slice_start:slice_end,:]
+    
+    new_block = np.hstack((xn_matrix,x_tilde_n_slice,x_tilde_n1_slice))
+    
+    if n_point == 0:
+        
+        full_data = new_block
+        
+    else:
+        
+        full_data = np.vstack((full_data,new_block))
 
-# # Carry out training
-# def loss(w):
-#    L = 0
-#    for i in range(N):
-#       L +=  # + lamb*norm(w,ord=order)
-#    L = -1/N * L
-#    return L
+n_pts = x_tilde_n.shape[0]
 
-# w0 = np.ones(N)
-# w = minimize(loss,w0).x
+step_sizes = np.zeros(n_pts) + dt
 
-# there are python ML packages that can split the data into training and testing sets, maybe consider using that instead of the way I split it up?
+#%%
+######################### Network parameters ##################################
 
-# Compute training accuracy
+n_layers = 3 #Number of hidden layers
+n_dim_per_layer = 100 #Neurons per layer
+
+n_dimensions = 3 #Spatial dimension 
+
+ACTIVATIONS = tf.nn.leaky_relu #Activation function
+VALIDATION_SPLIT = .2 # 80% for training, 20% for testing
+BATCH_SIZE = 128 
+LEARNING_RATE = 1e-2
+N_EPOCHS = 15
+
+# use diagonal sigma matrix
+diffusivity_type = "spd"
+
+# define the neural network model we will use for identification
+encoder = ModelBuilder.diff_network(
+                                    n_input_dimensions=int(2*n_dimensions), #Takes xn and tilde_xn
+                                    n_output_dimensions=n_dimensions,
+                                    n_layers=n_layers,
+                                    n_dim_per_layer=n_dim_per_layer,
+                                    name="diff_net",
+                                    activation=ACTIVATIONS,
+                                    diffusivity_type=diffusivity_type)
+encoder.summary()
+
+#dictionary with jacobian parameters
+jac_par = {'sigma': 10, 'r': 28, 'beta': 8/3}
+
+model = SDEApproximationNetwork(sde_model=encoder,
+                                step_size=dt,
+                                jac_par=jac_par,
+                                method="euler",
+                                diffusivity_type=diffusivity_type)
+
+model.compile(optimizer=tf.keras.optimizers.Adamax())
+
+sde_i = SDEIdentification(model=model)
+
+xn = full_data[:,0:3]
+tilde_xn = full_data[:,3:6]
+tilde_xn1 = full_data[:,6:9]
+
+hist = sde_i.train_model(xn, tilde_xn, tilde_xn1, step_size=step_sizes,
+                         validation_split=VALIDATION_SPLIT,
+                         n_epochs=N_EPOCHS,
+                         batch_size=BATCH_SIZE)
+#%%
+
+fig, hist_axes = plt.subplots(1, 1, figsize=(10, 5))
+hist_axes.clear()
+hist_axes.plot(hist.history["loss"], label='loss')
+hist_axes.plot(hist.history["val_loss"], label='validation')
+hist_axes.set_ylim([np.min(hist.history["loss"])*1.1, 5])
+hist_axes.set_xlabel("Epoch")
+hist_axes.legend()
+fig.savefig('FirstTrainingSPD.pdf')
 
 
-# Compute testing accuracy of the predictions of your model
 
-x_tilde_n_test = x_tilde_n[1::2,:]
-x_tilde_np1_test = x_tilde_np1[1::2,:]
+
+
+
 
 
 

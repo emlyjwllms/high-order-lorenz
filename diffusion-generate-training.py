@@ -60,18 +60,28 @@ if __name__ == "__main__":
     K = 1000 # number of training samples per element
     epsilon = 10e-3
 
-    x_tilde_n = np.zeros((K*N,3))
-    x_tilde_np1 = np.zeros((K*N,3))
-
     # loop through elements
     print('loop through elements')
     for n in range(0,N-1):
-        for k in range(1,K):
+        x_tilde_n_current = np.zeros((K,3))
+        x_tilde_np1_current = np.zeros((K,3))
+        for k in range(0,K):
             x_tilde_n_k = epsilon*np.random.randn(3)
             x_n_k = xh[n] + x_tilde_n_k
             x_np1_k = x_n_k + f(x_n_k)*dt
             x_tilde_np1_k = x_np1_k - xh[n+1]
-            x_tilde_n[k,:] = x_tilde_n_k
-            x_tilde_np1[k,:] = x_tilde_np1_k
+            x_tilde_n_current[k,:] = x_tilde_n_k
+            x_tilde_np1_current[k,:] = x_tilde_np1_k
+        
+        if n == 0:
+            
+            x_tilde_n = x_tilde_n_current
+            x_tilde_np1 = x_tilde_np1_current
+            
+        else:
+            
+            x_tilde_n = np.vstack((x_tilde_n,x_tilde_n_current))
+            x_tilde_np1 = np.vstack((x_tilde_np1,x_tilde_np1_current))
+            
 
     np.savez('diffusion-training-data', x_tilde_n=x_tilde_n, x_tilde_np1=x_tilde_np1)

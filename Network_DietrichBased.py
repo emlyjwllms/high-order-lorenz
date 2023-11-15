@@ -83,17 +83,14 @@ class ModelBuilder:
 
     @staticmethod
     def diff_network(n_input_dimensions,
-                                n_output_dimensions,
-                                n_layers,
-                                n_dim_per_layer,
-                                name,
-                                jac_par, #Parameters for Jacobian
-                                delta_t, #Time step
-                                diffusivity_type="diagonal",
-                                activation="tanh",
-                                dtype=tf.float64,
-                                n_parameter_dimensions=0
-                                ):
+                     n_output_dimensions,
+                     n_layers,
+                     n_dim_per_layer,
+                     name,
+                     diffusivity_type="diagonal",
+                     activation="tanh",
+                     dtype=tf.float64,
+                     ):
         def make_tri_matrix(z):
             # first, make all eigenvalues positive by changing the diagonal to positive values
             z = tfp.math.fill_triangular(z)
@@ -110,7 +107,7 @@ class ModelBuilder:
         small_init = 1e-2
         initializer = tf.keras.initializers.RandomUniform(minval=-small_init, maxval=small_init, seed=None)
         
-        inputs = layers.Input((n_input_dimensions+n_parameter_dimensions,), dtype=dtype, name=name + '_inputs')
+        inputs = layers.Input((n_input_dimensions,), dtype=dtype, name=name + '_inputs')
 
         #Network for Sigma matrix
         gp_x = inputs
@@ -170,22 +167,23 @@ class ModelBuilder:
         #Get individual coordinates of xn
         x, y, z = xn[:,0], xn[:,1], xn[:,2]
         
-        #Compute Jacobian entries evaluated at xn
-        df1dx = -sigma
-        df1dy = sigma
-        df1dz = tf.constant([0], dtype=tf.float64)
+        # Compute Jacobian entries evaluated at xn
+        df1dx = -sigma * tf.ones_like(x)
+        df1dy = sigma * tf.ones_like(x)
+        df1dz = tf.zeros_like(x)
         df2dx = r - z
-        df2dy = tf.constant([-1], dtype=tf.float64)
+        df2dy = -tf.ones_like(x)
         df2dz = -x
         df3dx = y
         df3dy = x
-        df3dz = -beta
-        
-        #Creates Jacobian tensor
+        df3dz = -beta * tf.ones_like(x)
+                
+        # Creates Jacobian tensor
         J = tf.stack([
-        tf.stack([df1dx, df1dy, df1dz], axis=1),
-        tf.stack([df2dx, df2dy, df2dz], axis=1),
-        tf.stack([df3dx, df3dy, df3dz], axis=1)], axis=1)
+            tf.stack([df1dx, df1dy, df1dz], axis=1),
+            tf.stack([df2dx, df2dy, df2dz], axis=1),
+            tf.stack([df3dx, df3dy, df3dz], axis=1)
+        ], axis=1)
         
         #Compute drift term
         drift_ = tf.linalg.matvec(J, tilde_xn)
@@ -341,6 +339,13 @@ class SDEIdentification:
                               validation_split=validation_split,
                               callbacks=callbacks)
         return hist
+    
+    def eval_sigma(self, xn, tilde_xn):
+        
+        sigma_theta = self.model.call_xn(xn, tilde_xn)
+        return K.eval(sigma_theta)
+        
+        
 
 class SDEApproximationNetwork(tf.keras.Model):
     """
@@ -429,7 +434,7 @@ class SDEApproximationNetwork(tf.keras.Model):
     
         return x_n, tilde_xn, tilde_xn1, step_size
 
-    def call_xn(self, inputs_xn):
+    def call_xn(self, xn, tilde_xn):
         """
         Can be used to evaluate the drift and diffusivity
         of the sde_model. This is different than the "call" method
@@ -443,7 +448,7 @@ class SDEApproximationNetwork(tf.keras.Model):
         -------
         """
 
-        return self.sde_model(inputs_xn)
+        return self.model(tf.concat([xn, tilde_xn], axis=1))
 
     def call(self, inputs):
         """
