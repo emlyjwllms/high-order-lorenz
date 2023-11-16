@@ -69,12 +69,12 @@ n_dimensions = 3 #Spatial dimension
 
 ACTIVATIONS = tf.nn.leaky_relu #Activation function
 VALIDATION_SPLIT = .2 # 80% for training, 20% for testing
-BATCH_SIZE = 128 
-LEARNING_RATE = 1e-2
-N_EPOCHS = 15
+BATCH_SIZE = 128
+LEARNING_RATE = 1e-1
+N_EPOCHS = 100
 
 # use diagonal sigma matrix
-diffusivity_type = "spd"
+diffusivity_type = "diagonal"
 
 # define the neural network model we will use for identification
 encoder = ModelBuilder.diff_network(
@@ -112,12 +112,35 @@ hist = sde_i.train_model(xn, tilde_xn, tilde_xn1, step_size=step_sizes,
 
 fig, hist_axes = plt.subplots(1, 1, figsize=(10, 5))
 hist_axes.clear()
-hist_axes.plot(hist.history["loss"], label='loss')
-hist_axes.plot(hist.history["val_loss"], label='validation')
-hist_axes.set_ylim([np.min(hist.history["loss"])*1.1, 5])
+hist_axes.set_title(r"Training Results for Diagonal $\Sigma$")
+hist_axes.plot(hist.history["loss"], label='Loss')
+hist_axes.plot(hist.history["val_loss"], label='Validation')
+hist_axes.set_ylim([np.min(hist.history["loss"])*1.1, np.max(hist.history["loss"])])
 hist_axes.set_xlabel("Epoch")
 hist_axes.legend()
-fig.savefig('FirstTrainingSPD.pdf')
+fig.savefig('FirstTrainingDiagonal.pdf')
+
+#%%
+
+file_path = 'Trained_Dietrich'
+file_path += '/' + diffusivity_type + '/'
+file_path += f'HL{n_layers}_'
+file_path += f'N{n_dim_per_layer}_'
+file_path += 'LReLU_'
+file_path += 'LR1e-1_'
+file_path += f'BS{BATCH_SIZE}_'
+file_path += f'EP{N_EPOCHS}/'
+
+#%%
+
+# For using the model, you would do:
+
+# sde_i.sample_tilde_xn1(xn, tilde_xn, step_size, jac_par, diffusivity_type)
+
+
+#provided you have xn, tilde_xn and step_size  
+
+
 
 
 

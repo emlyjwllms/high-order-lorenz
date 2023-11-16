@@ -9,6 +9,8 @@ import tensorflow_probability as tfp
 import sys
 import numpy as np
 
+import json
+
 tfd = tfp.distributions
 
 # For numeric stability, set the default floating-point dtype to float64
@@ -105,6 +107,7 @@ class ModelBuilder:
         # initialize with small (not zero!) values so that it does not dominate the drift
         # estimation at the beginning of training
         small_init = 1e-2
+        # small_init = 0.3
         initializer = tf.keras.initializers.RandomUniform(minval=-small_init, maxval=small_init, seed=None)
         
         inputs = layers.Input((n_input_dimensions,), dtype=dtype, name=name + '_inputs')
@@ -315,8 +318,35 @@ class SDEIdentification:
     Needs a "tf.keras.Model" like the SDEApproximationNetwork or VAEModel to work.
     """
 
-    def __init__(self, model):
-        self.model = model
+    def __init__(self, model=None, path=None):
+        
+        if model == None:
+            
+            assert(path is not None), "Model not provided. Please, provide a fresh model or path to trained model"
+            
+            #Load SDEApp dictionary
+            with open(path + 'SDEApp_data.json', 'r') as infile:
+                SDEApp = json.load(infile)
+                
+            step_size = SDEApp['step_size'] 
+            jac_par = SDEApp['jac_par']
+            method = SDEApp['method']
+            diffusivity_type = SDEApp['diffusivity_type']
+            
+            #Load inner model (diff_network)
+            loaded_diff_network = tf.keras.models.load_model(path + 'diff_network/')
+            
+            #Construct outer model (SDEApproximationNetwork)
+            SDEApp_model = SDEApproximationNetwork(loaded_diff_network, step_size, jac_par, method, diffusivity_type)
+            
+            # #Load outer model weights
+            # SDEApp_model.load_weights(path + 'SDEApp_model/')
+            
+            self.model = SDEApp_model
+            
+        else:
+            
+         self.model = model
 
     def train_model(self, xn, tilde_xn, tilde_xn1, step_size, validation_split=0.1, n_epochs=100, batch_size=1000, callbacks=[]):
         print(f"training for {n_epochs} epochs with {int(xn.shape[0] * (1 - validation_split))} data points"
@@ -344,6 +374,45 @@ class SDEIdentification:
         
         sigma_theta = self.model.call_xn(xn, tilde_xn)
         return K.eval(sigma_theta)
+    
+    def sample_tilde_xn1(self,
+                         xn,
+                         tilde_xn,
+                         step_size,
+                         jac_par,
+                         diffusivity_type):
+        """
+        Use the neural network to sample a path with the Euler Maruyama scheme.
+        """
+        sigma_theta = self.model.call_xn(xn, tilde_xn)
+
+        approx_normal = ModelBuilder.define_normal_distribution(xn,
+                                                                tilde_xn,
+                                                                step_size,
+                                                                jac_par,
+                                                                sigma_theta,
+                                                                diffusivity_type)
+
+        tilde_xn1 = approx_normal.sample()
+        return keras.backend.eval(tilde_xn1)
+    
+    def save_model(self,path):
+        
+        SDEApp = {}
+        SDEApp['step_size'] = self.model.step_size
+        SDEApp['jac_par'] =  self.model.jac_par
+        SDEApp['method'] = self.model.method
+        SDEApp['diffusivity_type'] = self.model.diffusivity_type
+        
+        #Save dictionary with model data
+        with open(path + 'SDEApp_data.json', 'w') as outfile:
+            json.dump(SDEApp, outfile)
+        
+        #Save weights of outer model (SDEApproximationNetwork)       
+        self.model.save(path + 'SDEApp_model/SDEApp_model_weights.h5')
+        
+        #Save inner model (diff_network)
+        self.model.sde_model.save(path + 'diff_network')
         
         
 
@@ -382,7 +451,6 @@ class SDEApproximationNetwork(tf.keras.Model):
         return {
             "sde_model": self.sde_model,
             "step_size": self.step_size,
-            "n_parameters": self.n_parameters,
             "method": self.method,
             "diffusivity_type": self.diffusivity_type
         }
@@ -475,3 +543,4 @@ class SDEApproximationNetwork(tf.keras.Model):
         self.add_metric(distortion, name="distortion", aggregation="mean")
 
         return self.sde_model(tf.concat([xn, tilde_xn], axis=1))
+    
