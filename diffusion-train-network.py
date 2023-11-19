@@ -173,7 +173,7 @@ if save:
 
 ################################ Test model ####################################
 
-model = tf.keras.models.load_model(file_path)
+model = tf.saved_model.load(file_path)
 
 sde_i = SDEIdentification(model=model)
 
@@ -202,7 +202,7 @@ for n in range(N-1):
     # compare naive model to NN
     alpha = 1.0
     xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
-    #xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_EM[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
+    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_EM[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
 
 
 plt.figure(1)
