@@ -26,64 +26,6 @@ class ModelBuilder:
     DIFF_TYPES = ["diagonal", "triangular", "spd"]
 
     @staticmethod
-    def define_residual_model(n_input_dimensions, #Input dimension
-                              n_output_dimensions, #Output dimension
-                              n_layers, #Number of hidden layers
-                              n_dim_per_layer, #Neurons per layer (same for all)
-                              name, #Name for this network
-                              activation="tanh", #Activation function
-                              scale=1e-1, #Output weight
-                              dtype=tf.float64
-                              ):
-
-        #Placeholder for inputs
-        inputs = layers.Input((n_input_dimensions,), dtype=dtype, name=name + '_inputs')
-        
-        #Apply hidden layers
-        network_x = inputs
-        for i in range(n_layers):
-            network_x = layers.Dense(n_dim_per_layer, activation=activation, dtype=dtype,
-                                     name=name + "_hidden/dense_{}".format(i))(network_x)
-        
-        #Apply output layer
-        network_output = layers.Dense(n_output_dimensions, dtype=dtype,
-                                      name=name + "_output_mean", activation=None)(network_x)
-
-        #Define network model. Note the residual connection in the output
-        network = tf.keras.Model(inputs=inputs, outputs=(1 - scale) * inputs + scale * network_output,
-                                 name=name + "_residual_model")
-        return network
-
-    @staticmethod
-    def define_forward_model(n_input_dimensions, #Input dimension
-                              n_output_dimensions, #Output dimension
-                              n_layers, #Number of hidden layers
-                              n_dim_per_layer, #Neurons per layer (same for all)
-                              name, #Name for this network
-                              activation="tanh", #Activation function
-                              scale=1e-1, #Output weight
-                              dtype=tf.float64
-                              ):
-
-        #Placeholder for inputs
-        inputs = layers.Input((n_input_dimensions,), dtype=dtype, name=name + '_inputs')
-        
-        #Apply hidden layers
-        network_x = inputs
-        for i in range(n_layers):
-            network_x = layers.Dense(n_dim_per_layer, activation=activation, dtype=dtype,
-                                     name=name + "_hidden/dense_{}".format(i))(network_x)
-            
-        #Apply output layer
-        network_output = layers.Dense(n_output_dimensions, dtype=dtype,
-                                      name=name + "_output_mean", activation=None)(network_x)
-
-        #Define network model. No residual in output
-        network = tf.keras.Model(inputs=inputs, outputs=network_output,
-                                 name=name + "_forward_model")
-        return network
-
-    @staticmethod
     def diff_network(n_input_dimensions,
                      n_output_dimensions,
                      n_layers,
@@ -168,7 +110,12 @@ class ModelBuilder:
         beta = tf.constant([jac_par['beta']], dtype=tf.float64)
         
         #Get individual coordinates of xn
-        x, y, z = xn[:,0], xn[:,1], xn[:,2]
+        if len(xn.shape) == 1:
+            x = tf.reshape(xn[0], [1])
+            y = tf.reshape(xn[1], [1])
+            z = tf.reshape(xn[2], [1])
+        else:
+            x, y, z = xn[:,0], xn[:,1], xn[:,2]
         
         # Compute Jacobian entries evaluated at xn
         df1dx = -sigma * tf.ones_like(x)
@@ -515,8 +462,15 @@ class SDEApproximationNetwork(tf.keras.Model):
         Returns evaluated the diffusivity of the sde_model
         -------
         """
-
-        return self.model(tf.concat([xn, tilde_xn], axis=1))
+        assert(len(xn.shape) == len(tilde_xn.shape)), "Shape dimension mismatch between xn and tilde_xn"
+        if len(xn.shape) == 1:
+            xn = xn.reshape((1,3))
+            tilde_xn = tilde_xn.reshape((1,3))
+            arguments = tf.concat([xn, tilde_xn], axis=1)
+            print(arguments.shape)
+        else:
+            arguments = tf.concat([xn, tilde_xn], axis=1)
+        return self.sde_model(arguments)
 
     def call(self, inputs):
         """

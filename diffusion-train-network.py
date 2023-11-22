@@ -64,7 +64,7 @@ cs = lorenz['cs']
 t = lorenz['t']
 dt = t[1]-t[0]
 
-train = False
+train = True
 save = False
 
 ######################### Network parameters ##################################
@@ -74,11 +74,11 @@ n_dim_per_layer = 100 #Neurons per layer
 
 n_dimensions = 3 #Spatial dimension 
 
-ACTIVATIONS = tf.nn.leaky_relu #Activation function
+ACTIVATIONS = tf.nn.relu #Activation function
 VALIDATION_SPLIT = .2 # 80% for training, 20% for testing
 BATCH_SIZE = 128
-LEARNING_RATE = 1e-1
-N_EPOCHS = 50
+LEARNING_RATE = 1e-2
+N_EPOCHS = 60
 
 # use diagonal sigma matrix
 diffusivity_type = "diagonal"
@@ -119,7 +119,7 @@ if train:
         else:
             
             full_data = np.vstack((full_data,new_block))
-
+            
     n_pts = x_tilde_n.shape[0]
 
     step_sizes = np.zeros(n_pts) + dt
@@ -173,9 +173,17 @@ if save:
 
 ################################ Test model ####################################
 
-model = tf.saved_model.load(file_path)
+#%%
 
-sde_i = SDEIdentification(model=model)
+full_data_slice = full_data[0:3000,:]
+
+#%%
+if not train:
+    model = tf.saved_model.load(file_path)
+    
+    model.get_config()
+    
+    sde_i = SDEIdentification(model=model)
 
 N = len(t)
 epsilon = 10e-3
@@ -200,11 +208,11 @@ for n in range(N-1):
     x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
     # compare naive model to NN
-    alpha = 1.0
+    alpha = 1.5
     xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
     xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_EM[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
 
-
+#%%
 plt.figure(1)
 plt.plot(t,x_EM[:,0],label=r"$x$")
 plt.plot(t,x_EM[:,1],label=r"$y$")
@@ -214,6 +222,7 @@ plt.ylabel(r"$\mathbf{x}$")
 plt.legend()
 plt.grid()
 plt.show()
+plt.savefig('fig1.png', format='png')
 
 plt.figure(2,figsize=(12,4))
 plt.subplot(1,3,1)
