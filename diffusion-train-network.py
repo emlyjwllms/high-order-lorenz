@@ -317,7 +317,7 @@ plt.ylabel(r"${\mathbf{z}}$")
 plt.legend()
 plt.grid()
 plt.tight_layout()
-plt.savefig('tildes-em.png', format='png', dpi=300)
+plt.savefig('tildes-xh.png', format='png', dpi=300)
 
 plt.show()
 
