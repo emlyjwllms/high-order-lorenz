@@ -57,8 +57,8 @@ porder = 2
 
 lorenz = np.load('dg_lorenz_dt100_p' + str(porder) + '.npz')
 
-x_n = lorenz['xh'].T
-x_n = x_n[0:-1,:]
+xh = lorenz['xh'].T
+x_n = xh[0:-1,:]
 cs = lorenz['cs']
 t = lorenz['t']
 dt = t[1]-t[0]
@@ -216,6 +216,17 @@ plt.grid()
 plt.savefig('em-sol.png', format='png', dpi=300)
 plt.show()
 
+plt.figure(11)
+plt.plot(t,xh[:,0],label=r"$x$")
+plt.plot(t,xh[:,1],label=r"$y$")
+plt.plot(t,xh[:,2],label=r"$z$")
+plt.xlabel("t")
+plt.ylabel(r"$\mathbf{x}$")
+plt.legend()
+plt.grid()
+plt.savefig('xh-sol.png', format='png', dpi=300)
+plt.show()
+
 
 plt.figure(2,figsize=(12,4))
 plt.subplot(1,3,1)
@@ -244,7 +255,6 @@ plt.legend()
 plt.grid()
 plt.tight_layout()
 plt.savefig('tildes.png', format='png', dpi=300)
-
 plt.show()
 
 plt.figure(3,figsize=(12,4))
@@ -284,16 +294,15 @@ plt.show()
 
 plt.figure(5,figsize=(12,4))
 plt.subplot(1,3,1)
-plt.plot(t,x_EM[:,0],label=r"$x$")
+plt.plot(t,xh[:,0],label=r"$x$")
 plt.plot(t,xtilde_NN[:,0],label=r"$\tilde{x}_{NN}$")
 plt.legend()
 plt.xlabel("t")
 plt.ylabel(r"${\mathbf{x}}$")
-plt.title(r"$\alpha$ = " + str(alpha))
 plt.grid()
 
 plt.subplot(1,3,2)
-plt.plot(t,x_EM[:,1],label=r"$y$")
+plt.plot(t,xh[:,1],label=r"$y$")
 plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
 plt.legend()
 plt.xlabel("t")
@@ -301,7 +310,7 @@ plt.ylabel(r"${\mathbf{y}}$")
 plt.grid()
 
 plt.subplot(1,3,3)
-plt.plot(t,x_EM[:,2],label=r"$z$")
+plt.plot(t,xh[:,2],label=r"$z$")
 plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
 plt.xlabel("t")
 plt.ylabel(r"${\mathbf{z}}$")
