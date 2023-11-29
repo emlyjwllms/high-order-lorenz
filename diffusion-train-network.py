@@ -202,7 +202,7 @@ for n in range(N-1):
     # compare naive model to NN
     alpha = 1.5
     xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_n[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
-    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(xtilde_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
+    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(xtilde_NN[n,:], x_n[n,:], dt, jac_par, diffusivity_type)
 
 
 plt.figure(1)
