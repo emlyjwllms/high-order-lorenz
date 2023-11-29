@@ -1,5 +1,4 @@
 # train SDE diffusion
-
 import sys
 import os
 current = os.path.dirname(os.path.realpath(__file__))
@@ -64,13 +63,14 @@ cs = lorenz['cs']
 t = lorenz['t']
 dt = t[1]-t[0]
 
-train = True
+# SPECIFY IF YOU WANT TO TRAIN AND SAVE THE RESULTS
+train = False
 save = False
 
 ######################### Network parameters ##################################
 
-n_layers = 3 #Number of hidden layers
-n_dim_per_layer = 100 #Neurons per layer
+n_layers = 2 #Number of hidden layers
+n_dim_per_layer = 5 #Neurons per layer
 
 n_dimensions = 3 #Spatial dimension 
 
@@ -78,7 +78,7 @@ ACTIVATIONS = tf.nn.relu #Activation function
 VALIDATION_SPLIT = .2 # 80% for training, 20% for testing
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-2
-N_EPOCHS = 60
+N_EPOCHS = 5
 
 # use diagonal sigma matrix
 diffusivity_type = "diagonal"
@@ -92,7 +92,7 @@ encoder = ModelBuilder.diff_network(
                                     name="diff_net",
                                     activation=ACTIVATIONS,
                                     diffusivity_type=diffusivity_type)
-encoder.summary()
+#encoder.summary()
 
 #dictionary with jacobian parameters
 jac_par = {'sigma': 10, 'r': 28, 'beta': 8/3}
@@ -151,7 +151,7 @@ if train:
     hist_axes.set_ylim([np.min(hist.history["loss"])*1.1, np.max(hist.history["loss"])])
     hist_axes.set_xlabel("Epoch")
     hist_axes.legend()
-    fig.savefig('FirstTrainingDiagonal.png')
+    #fig.savefig('FirstTrainingDiagonal.png')
 
 file_path = 'Trained_Dietrich'
 file_path += '/' + diffusivity_type + '/'
@@ -163,27 +163,19 @@ file_path += f'BS{BATCH_SIZE}_'
 file_path += f'EP{N_EPOCHS}/'
 
 if save:
-    model.save(file_path)
+    model.save_weights(file_path, overwrite=True, save_format=None, options=None)
 
-# For using the model, you would do:
+################## TEST
 
-# sde_i.sample_tilde_xn1(xn, tilde_xn, step_size, jac_par, diffusivity_type)
+model = SDEApproximationNetwork(sde_model=encoder,
+                                    step_size=dt,
+                                    jac_par=jac_par,
+                                    method="euler",
+                                    diffusivity_type=diffusivity_type)
 
-#provided you have xn, tilde_xn and step_size  
+model.load_weights(file_path)
 
-################################ Test model ####################################
-
-#%%
-
-full_data_slice = full_data[0:3000,:]
-
-#%%
-if not train:
-    model = tf.saved_model.load(file_path)
-    
-    model.get_config()
-    
-    sde_i = SDEIdentification(model=model)
+sde_i = SDEIdentification(model=model)
 
 N = len(t)
 epsilon = 10e-3
@@ -196,8 +188,8 @@ x_EM = np.zeros((N,3))
 xtilde = np.zeros((N,3))
 xtilde_NN = np.zeros((N,3))
 x_EM[0,:] = [-8.67139571762,4.98065219709,25]
-xtilde[0,:] = [1,1,1]
-xtilde_NN[0,:] = [1,1,1]
+xtilde[0,:] = [-8.67139571762,4.98065219709,25]
+xtilde_NN[0,:] = [-8.67139571762,4.98065219709,25]
 
 # time integration
 for n in range(N-1):
@@ -209,10 +201,10 @@ for n in range(N-1):
 
     # compare naive model to NN
     alpha = 1.5
-    xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
-    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_EM[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
+    xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_n[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
+    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(xtilde_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
 
-#%%
+
 plt.figure(1)
 plt.plot(t,x_EM[:,0],label=r"$x$")
 plt.plot(t,x_EM[:,1],label=r"$y$")
@@ -221,8 +213,9 @@ plt.xlabel("t")
 plt.ylabel(r"$\mathbf{x}$")
 plt.legend()
 plt.grid()
+plt.savefig('em-sol.png', format='png', dpi=300)
 plt.show()
-plt.savefig('fig1.png', format='png')
+
 
 plt.figure(2,figsize=(12,4))
 plt.subplot(1,3,1)
@@ -250,6 +243,7 @@ plt.ylabel(r"$\tilde{\mathbf{z}}$")
 plt.legend()
 plt.grid()
 plt.tight_layout()
+plt.savefig('tildes.png', format='png', dpi=300)
 
 plt.show()
 
@@ -283,19 +277,40 @@ plt.legend()
 plt.grid()
 plt.tight_layout()
 
+plt.savefig('logtildes.png', format='png', dpi=300)
+
 plt.show()
 
 
+plt.figure(5,figsize=(12,4))
+plt.subplot(1,3,1)
+plt.plot(t,x_EM[:,0],label=r"$x$")
+plt.plot(t,xtilde_NN[:,0],label=r"$\tilde{x}_{NN}$")
+plt.legend()
+plt.xlabel("t")
+plt.ylabel(r"${\mathbf{x}}$")
+plt.title(r"$\alpha$ = " + str(alpha))
+plt.grid()
 
+plt.subplot(1,3,2)
+plt.plot(t,x_EM[:,1],label=r"$y$")
+plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
+plt.legend()
+plt.xlabel("t")
+plt.ylabel(r"${\mathbf{y}}$")
+plt.grid()
 
+plt.subplot(1,3,3)
+plt.plot(t,x_EM[:,2],label=r"$z$")
+plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
+plt.xlabel("t")
+plt.ylabel(r"${\mathbf{z}}$")
+plt.legend()
+plt.grid()
+plt.tight_layout()
+plt.savefig('tildes-em.png', format='png', dpi=300)
 
-
-
-
-
-
-
-
+plt.show()
 
 
 

@@ -467,7 +467,7 @@ class SDEApproximationNetwork(tf.keras.Model):
             xn = xn.reshape((1,3))
             tilde_xn = tilde_xn.reshape((1,3))
             arguments = tf.concat([xn, tilde_xn], axis=1)
-            print(arguments.shape)
+            #print(arguments.shape)
         else:
             arguments = tf.concat([xn, tilde_xn], axis=1)
         return self.sde_model(arguments)
