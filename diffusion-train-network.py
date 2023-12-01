@@ -69,8 +69,8 @@ save = False
 
 ######################### Network parameters ##################################
 
-n_layers = 2 #Number of hidden layers
-n_dim_per_layer = 5 #Neurons per layer
+n_layers = 3 #Number of hidden layers
+n_dim_per_layer = 10 #Neurons per layer
 
 n_dimensions = 3 #Spatial dimension 
 
@@ -78,7 +78,7 @@ ACTIVATIONS = tf.nn.relu #Activation function
 VALIDATION_SPLIT = .2 # 80% for training, 20% for testing
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-2
-N_EPOCHS = 5
+N_EPOCHS = 100
 
 # use diagonal sigma matrix
 diffusivity_type = "diagonal"
@@ -143,15 +143,16 @@ if train:
                             n_epochs=N_EPOCHS,
                             batch_size=BATCH_SIZE)
 
-    fig, hist_axes = plt.subplots(1, 1, figsize=(10, 5))
-    hist_axes.clear()
-    hist_axes.set_title(r"Training Results for Diagonal $\Sigma$")
-    hist_axes.plot(hist.history["loss"], label='Loss')
-    hist_axes.plot(hist.history["val_loss"], label='Validation')
-    hist_axes.set_ylim([np.min(hist.history["loss"])*1.1, np.max(hist.history["loss"])])
-    hist_axes.set_xlabel("Epoch")
-    hist_axes.legend()
-    #fig.savefig('FirstTrainingDiagonal.png')
+    plt.figure(16,figsize=(6,4))
+    plt.title(r"Diagonal $\Sigma$")
+    plt.plot(hist.history["loss"], label='Training')
+    plt.plot(hist.history["val_loss"], label='Validation')
+    plt.ylim([np.min(hist.history["loss"])*1.1, np.max(hist.history["loss"])])
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig('training.png')
+    plt.show()
 
 file_path = 'Trained_Dietrich'
 file_path += '/' + diffusivity_type + '/'
@@ -200,54 +201,64 @@ for n in range(N-1):
     x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
     # compare naive model to NN
-    alpha = 1.5
+    alpha = 1.2
     xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_n[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
-    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(xtilde_NN[n,:], x_n[n,:], dt, jac_par, diffusivity_type)
+
+    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(xtilde_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
 
 
-plt.figure(1)
-plt.plot(t,x_EM[:,0],label=r"$x$")
-plt.plot(t,x_EM[:,1],label=r"$y$")
-plt.plot(t,x_EM[:,2],label=r"$z$")
-plt.xlabel("t")
-plt.ylabel(r"$\mathbf{x}$")
-plt.legend()
-plt.grid()
-plt.savefig('em-sol.png', format='png', dpi=300)
-plt.show()
-
-plt.figure(11)
-plt.plot(t,xh[:,0],label=r"$x$")
-plt.plot(t,xh[:,1],label=r"$y$")
-plt.plot(t,xh[:,2],label=r"$z$")
-plt.xlabel("t")
-plt.ylabel(r"$\mathbf{x}$")
-plt.legend()
-plt.grid()
-plt.savefig('xh-sol.png', format='png', dpi=300)
-plt.show()
-
-
-plt.figure(2,figsize=(12,4))
+plt.figure(3,figsize=(12,4))
 plt.subplot(1,3,1)
-plt.plot(t,xtilde[:,0],label=r"$\tilde{x}$")
-plt.plot(t,xtilde_NN[:,0],label=r"$\tilde{x}_{NN}$")
-plt.legend()
+plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}_\alpha$")
+plt.plot(t,np.log(np.abs(xtilde_NN[:,0])),label=r"$\tilde{x}_{NN}$")
 plt.xlabel("t")
-plt.ylabel(r"$\tilde{\mathbf{x}}$")
-plt.title(r"$\alpha$ = " + str(alpha))
+plt.yscale("log")
+#plt.title(r"$\alpha$ = " + str(alpha))
+plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
+plt.legend()
 plt.grid()
 
 plt.subplot(1,3,2)
-plt.plot(t,xtilde[:,1],label=r"$\tilde{y}$")
-plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
-plt.legend()
+plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}_\alpha$")
+plt.plot(t,np.log(np.abs(xtilde_NN[:,1])),label=r"$\tilde{y}_{NN}$")
 plt.xlabel("t")
-plt.ylabel(r"$\tilde{\mathbf{y}}$")
+plt.yscale("log")
+plt.ylabel(r"$\log(|\tilde{\mathbf{y}}|)$")
+plt.legend()
 plt.grid()
 
 plt.subplot(1,3,3)
-plt.plot(t,xtilde[:,2],label=r"$\tilde{z}$")
+plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}_\alpha$")
+plt.plot(t,np.log(np.abs(xtilde_NN[:,2])),label=r"$\tilde{z}_{NN}$")
+plt.xlabel("t")
+plt.yscale("log")
+plt.ylabel(r"$\log(|\tilde{\mathbf{z}}|)$")
+plt.legend()
+plt.grid()
+plt.tight_layout()
+plt.savefig('logtildes.png', format='png', dpi=300)
+plt.show()
+
+plt.figure(4,figsize=(12,4))
+plt.subplot(1,3,1)
+plt.plot(t,(xtilde[:,0]),label=r"$\tilde{x}_\alpha$")
+plt.plot(t,(xtilde_NN[:,0]),label=r"$\tilde{x}_{NN}$")
+plt.xlabel("t")
+#plt.title(r"$\alpha$ = " + str(alpha))
+plt.ylabel(r"$\tilde{\mathbf{x}}$")
+plt.legend()
+plt.grid()
+
+plt.subplot(1,3,2)
+plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_\alpha$")
+plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
+plt.xlabel("t")
+plt.ylabel(r"$\tilde{\mathbf{y}}$")
+plt.legend()
+plt.grid()
+
+plt.subplot(1,3,3)
+plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_\alpha$")
 plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
 plt.xlabel("t")
 plt.ylabel(r"$\tilde{\mathbf{z}}$")
@@ -257,70 +268,40 @@ plt.tight_layout()
 plt.savefig('tildes.png', format='png', dpi=300)
 plt.show()
 
-plt.figure(3,figsize=(12,4))
+
+plt.figure(22,figsize=(12,4))
 plt.subplot(1,3,1)
-plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}$")
-plt.plot(t,np.log(np.abs(xtilde_NN[:,0])),label=r"$\tilde{x}_{NN}$")
-plt.xlabel("t")
-plt.yscale("log")
-plt.title(r"$\alpha$ = " + str(alpha))
-plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
-plt.legend()
-plt.grid()
-
-plt.subplot(1,3,2)
-plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}$")
-plt.plot(t,np.log(np.abs(xtilde_NN[:,1])),label=r"$\tilde{y}_{NN}$")
-plt.xlabel("t")
-plt.yscale("log")
-plt.ylabel(r"$\log(|\tilde{\mathbf{y}}|)$")
-plt.legend()
-plt.grid()
-
-plt.subplot(1,3,3)
-plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}$")
-plt.plot(t,np.log(np.abs(xtilde_NN[:,2])),label=r"$\tilde{z}_{NN}$")
-plt.xlabel("t")
-plt.yscale("log")
-plt.ylabel(r"$\log(|\tilde{\mathbf{z}}|)$")
-plt.legend()
-plt.grid()
-plt.tight_layout()
-
-plt.savefig('logtildes.png', format='png', dpi=300)
-
-plt.show()
-
-
-plt.figure(5,figsize=(12,4))
-plt.subplot(1,3,1)
-plt.plot(t,xh[:,0],label=r"$x$")
+plt.plot(t,xh[:,0],label=r"${x}$")
+plt.plot(t,x_EM[:,0],label=r"${x}_{EM}$")
 plt.plot(t,xtilde_NN[:,0],label=r"$\tilde{x}_{NN}$")
+#plt.plot(t,xtilde[:,0],label=r"$\tilde{x}_{\alpha}$")
 plt.legend()
 plt.xlabel("t")
 plt.ylabel(r"${\mathbf{x}}$")
+plt.ylim(-20,20)
 plt.grid()
 
 plt.subplot(1,3,2)
-plt.plot(t,xh[:,1],label=r"$y$")
+plt.plot(t,xh[:,1],label=r"${y}$")
+plt.plot(t,x_EM[:,1],label=r"${y}_{EM}$")
 plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
+#plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_{\alpha}$")
 plt.legend()
 plt.xlabel("t")
 plt.ylabel(r"${\mathbf{y}}$")
+plt.ylim(-25,25)
 plt.grid()
 
 plt.subplot(1,3,3)
-plt.plot(t,xh[:,2],label=r"$z$")
+plt.plot(t,xh[:,2],label=r"${z}$")
+plt.plot(t,x_EM[:,2],label=r"${z}_{EM}$")
 plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
+#plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_{\alpha}$")
 plt.xlabel("t")
 plt.ylabel(r"${\mathbf{z}}$")
 plt.legend()
 plt.grid()
+plt.ylim(0,50)
 plt.tight_layout()
-plt.savefig('tildes-xh.png', format='png', dpi=300)
-
+plt.savefig('paths.png', format='png', dpi=300)
 plt.show()
-
-
-
-
