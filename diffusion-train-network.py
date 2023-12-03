@@ -64,8 +64,8 @@ t = lorenz['t']
 dt = t[1]-t[0]
 
 # SPECIFY IF YOU WANT TO TRAIN AND SAVE THE RESULTS
-train = False
-save = False
+train = True
+save = True
 
 ######################### Network parameters ##################################
 
@@ -78,7 +78,7 @@ ACTIVATIONS = tf.nn.relu #Activation function
 VALIDATION_SPLIT = .2 # 80% for training, 20% for testing
 BATCH_SIZE = 128
 LEARNING_RATE = 1e-2
-N_EPOCHS = 100
+N_EPOCHS = 50
 
 # use diagonal sigma matrix
 diffusivity_type = "diagonal"
@@ -154,6 +154,17 @@ if train:
     plt.savefig('training.png')
     plt.show()
 
+    # plt.figure(17,figsize=(6,4))
+    # plt.title(r"Diagonal $\Sigma$")
+    # plt.plot(hist.history["accuracy"], label='Training')
+    # plt.plot(hist.history["val_accuracy"], label='Validation')
+    # plt.ylim([np.min(hist.history["accuracy"])*1.1, np.max(hist.history["accuracy"])])
+    # plt.xlabel("Epoch")
+    # plt.ylabel("Accuracy")
+    # plt.legend()
+    # plt.savefig('training-accuracy.png')
+    # plt.show()
+
 file_path = 'Trained_Dietrich'
 file_path += '/' + diffusivity_type + '/'
 file_path += f'HL{n_layers}_'
@@ -188,9 +199,14 @@ beta = 8/3
 x_EM = np.zeros((N,3))
 xtilde = np.zeros((N,3))
 xtilde_NN = np.zeros((N,3))
+x_NN = np.zeros((N,3))
+x_alpha = np.zeros((N,3))
 x_EM[0,:] = [-8.67139571762,4.98065219709,25]
-xtilde[0,:] = [-8.67139571762,4.98065219709,25]
-xtilde_NN[0,:] = [-8.67139571762,4.98065219709,25]
+x_NN[0,:] = [-8.67139571762,4.98065219709,25]
+x_alpha[0,:] = [-8.67139571762,4.98065219709,25]
+
+xtilde[0,:] = epsilon*np.random.randn(3)
+xtilde_NN[0,:] = xtilde[0,:]
 
 # time integration
 for n in range(N-1):
@@ -200,11 +216,14 @@ for n in range(N-1):
     # Euler-Maruyama method
     x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
-    # compare naive model to NN
-    alpha = 1.2
-    xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_n[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
+    # alpha method
+    alpha = 1.0
+    xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
+    x_alpha[n+1,:] = xh[n+1,:] + xtilde[n+1,:]
 
-    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(xtilde_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
+    # NN method
+    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
+    x_NN[n+1,:] = xh[n+1,:] + xtilde_NN[n+1,:]
 
 
 plt.figure(3,figsize=(12,4))
@@ -273,7 +292,7 @@ plt.figure(22,figsize=(12,4))
 plt.subplot(1,3,1)
 plt.plot(t,xh[:,0],label=r"${x}$")
 plt.plot(t,x_EM[:,0],label=r"${x}_{EM}$")
-plt.plot(t,xtilde_NN[:,0],label=r"$\tilde{x}_{NN}$")
+plt.plot(t,x_NN[:,0],label=r"${x}_{NN}$")
 #plt.plot(t,xtilde[:,0],label=r"$\tilde{x}_{\alpha}$")
 plt.legend()
 plt.xlabel("t")
@@ -284,7 +303,7 @@ plt.grid()
 plt.subplot(1,3,2)
 plt.plot(t,xh[:,1],label=r"${y}$")
 plt.plot(t,x_EM[:,1],label=r"${y}_{EM}$")
-plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
+plt.plot(t,x_NN[:,1],label=r"${y}_{NN}$")
 #plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_{\alpha}$")
 plt.legend()
 plt.xlabel("t")
@@ -295,7 +314,7 @@ plt.grid()
 plt.subplot(1,3,3)
 plt.plot(t,xh[:,2],label=r"${z}$")
 plt.plot(t,x_EM[:,2],label=r"${z}_{EM}$")
-plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
+plt.plot(t,x_NN[:,2],label=r"${z}_{NN}$")
 #plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_{\alpha}$")
 plt.xlabel("t")
 plt.ylabel(r"${\mathbf{z}}$")
