@@ -21,7 +21,7 @@ STD_MIN_VALUE = 1e-13  # the minimal number that the diffusivity models can have
 
 class ModelBuilder:
     """
-    Constructs neural network models with specified topology.
+    Builder for neural network that approximates :math:'\\Sigma', and Normal Distribution using it.
     """
     DIFF_TYPES = ["diagonal", "triangular", "spd"]
 
@@ -35,6 +35,33 @@ class ModelBuilder:
                      activation="tanh",
                      dtype=tf.float64,
                      ):
+        """
+        Constructs a neural network for approximating the :math:'\\Sigma' matrix.
+
+        Parameters
+        ----------
+        n_input_dimensions : int
+            Number of input dimensions.
+        n_output_dimensions : int
+            Number of output dimensions.
+        n_layers : int
+            Number of layers in the network.
+        n_dim_per_layer : int
+            Number of neurons in each layer.
+        name : str
+            Name of the model.
+        diffusivity_type : str, optional
+            Type of diffusivity matrix to use ('diagonal', 'triangular', 'spd'). Default is 'diagonal'.
+        activation : str, optional
+            Activation function to use in the layers. Default is 'tanh'.
+        dtype : data-type, optional
+            Data type of the layers. Default is tf.float64.
+
+        Returns
+        -------
+        tf.keras.Model
+            A TensorFlow Keras model representing the neural network.
+        """
         def make_tri_matrix(z):
             # first, make all eigenvalues positive by changing the diagonal to positive values
             z = tfp.math.fill_triangular(z)
@@ -51,7 +78,7 @@ class ModelBuilder:
         small_init = 1e-2
         # small_init = 0.3
         initializer = tf.keras.initializers.RandomUniform(minval=-small_init, maxval=small_init, seed=None)
-        
+
         inputs = layers.Input((n_input_dimensions,), dtype=dtype, name=name + '_inputs')
 
         #Network for Sigma matrix
@@ -103,7 +130,30 @@ class ModelBuilder:
                                    jac_par,
                                    sigma_theta, 
                                    diffusivity_type):
-        
+        """
+        Defines a normal distribution based on the provided parameters.
+
+        Parameters
+        ----------
+        xn : tensor
+            The current state.
+        tilde_xn : tensor
+            The modified current state.
+        step_size_ : float
+            The step size for the Euler-Maruyama method.
+        jac_par : dict
+            Parameters for the Jacobian computation.
+        sigma_theta : tensor
+            Sigma matrix for the distribution.
+        diffusivity_type : str
+            Type of diffusivity matrix to use ('diagonal', 'triangular', 'spd').
+
+        Returns
+        -------
+        tfd.Distribution
+            A TensorFlow Probability distribution object.
+        """
+
         #Define constant tensors for using in Jacobian computation
         sigma = tf.constant([jac_par['sigma']], dtype=tf.float64)
         r = tf.constant([jac_par['r']], dtype=tf.float64)
@@ -168,19 +218,23 @@ class ModelBuilder:
     @staticmethod
     def define_normal_distribution_triangular(yn_, step_size_, drift_, diffusivity_tril_):
         """
-        Construct a normal distribution with the Euler-Maruyama template, in tensorflow.
+        Constructs a normal distribution using a triangular diffusivity matrix.
 
         Parameters
         ----------
-        yn_ current points (batch_size x dimension)
-        step_size_ step sizes per point (batch_size x 1)
-        drift_ estimated drift at yn_
-        diffusivity_spd_ estimated diffusivity matrix at yn_ (batch_size x n_dim x n_dim)
+        yn_ : tensor
+            Current points (batch_size x dimension).
+        step_size_ : float
+            Step sizes per point (batch_size x 1).
+        drift_ : tensor
+            Estimated drift at yn_.
+        diffusivity_tril_ : tensor
+            Estimated diffusivity matrix at yn_ (batch_size x n_dim x n_dim).
 
         Returns
         -------
-        tfd.MultivariateNormalTriL object
-
+        tfd.MultivariateNormalTriL
+            A TensorFlow Probability Multivariate Normal distribution with a lower triangular scale matrix.
         """
         # a cumbersome way to multiply the step size scalar with the batch of matrices...
         # better use tfp.bijectors.FillScaleTriL()
@@ -201,19 +255,23 @@ class ModelBuilder:
     @staticmethod
     def define_normal_distribution_spd(yn_, step_size_, drift_, diffusivity_spd_):
         """
-        Construct a normal distribution with the Euler-Maruyama template, in tensorflow.
+        Constructs a normal distribution using a Symmetric Positive Definite (SPD) diffusivity matrix.
 
         Parameters
         ----------
-        yn_ current points (batch_size x dimension)
-        step_size_ step sizes per point (batch_size x 1)
-        drift_ estimated drift at yn_
-        diffusivity_spd_ estimated diffusivity matrix at yn_ (batch_size x n_dim x n_dim)
+        yn_ : tensor
+            Current points (batch_size x dimension).
+        step_size_ : float
+            Step sizes per point (batch_size x 1).
+        drift_ : tensor
+            Estimated drift at yn_.
+        diffusivity_spd_ : tensor
+            Estimated diffusivity matrix at yn_ (batch_size x n_dim x n_dim).
 
         Returns
         -------
-        tfd.MultivariateNormalTriL object
-
+        tfd.MultivariateNormalTriL
+            A TensorFlow Probability Multivariate Normal distribution with an SPD scale matrix.
         """
         # a cumbersome way to multiply the step size scalar with the batch of matrices...
         # TODO: REFACTOR with diffusivity_type=="triangular"
@@ -240,19 +298,77 @@ class ModelBuilder:
     
 class LossAndErrorPrintingCallback(keras.callbacks.Callback):
 
+    """
+    A custom callback for use with Keras models to print loss and error information.
+
+    This callback provides a method to log messages during training and can be customized
+    to output additional information at the end of each epoch, training batch, or test batch.
+    """
+
     @staticmethod
     def __log(message, flush=True):
+        """
+        Logs a message to standard output.
+
+        This is a static method used internally by the callback to output messages.
+
+        Parameters
+        ----------
+        message : str
+            The message to be logged.
+        flush : bool, optional
+            If True, the output buffer is flushed immediately. Default is True.
+        """
+
         sys.stdout.write(message)
         if flush:
             sys.stdout.flush()
 
     def on_train_batch_end(self, batch, logs=None):
+        """
+        Override to take actions at the end of a training batch.
+
+        Parameters
+        ----------
+        batch : int
+            The index of the batch within the current epoch.
+        logs : dict, optional
+            Contains the return value of `model.train_on_batch`. Typically, the keys 
+            are the names of the model's metrics and the values are the corresponding 
+            values for the batch.
+        """
         pass
 
     def on_test_batch_end(self, batch, logs=None):
+        """
+        Override to take actions at the end of a test batch.
+
+        Parameters
+        ----------
+        batch : int
+            The index of the batch within the current epoch.
+        logs : dict, optional
+            Contains the return value of `model.test_on_batch`. Typically, the keys 
+            are the names of the model's metrics and the values are the corresponding 
+            values for the batch.
+        """
         pass
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+        Called at the end of an epoch.
+
+        Logs the average loss for the epoch.
+
+        Parameters
+        ----------
+        epoch : int
+            The index of the epoch that ended.
+        logs : dict, optional
+            Dictionary containing the metrics results for this epoch.
+            Typically, the keys are the names of the model's metrics and the values are 
+            the corresponding average values for the entire epoch.
+        """
         LossAndErrorPrintingCallback.__log(
             "\rThe average loss for epoch {} is {:7.10f} ".format(
                 epoch, logs["loss"]
@@ -261,11 +377,29 @@ class LossAndErrorPrintingCallback(keras.callbacks.Callback):
 
 class SDEIdentification:
     """
-    Wrapper class that can be used for SDE identification.
-    Needs a "tf.keras.Model" like the SDEApproximationNetwork or VAEModel to work.
+    Wrapper class for identifying Stochastic Differential Equations (SDEs) using neural networks.
+
+    This class is designed to work with a SDEApproximationNetwork. It can load a pre-trained model
+    or a new model can be passed to it. It offers functionalities to train the model, evaluate 
+    :math:'\\Sigma' matrix, sample new data points, and save the model.
+
+    Parameters
+    ----------
+    model : SDEApproximationNetwork, optional
+        A pre-initialized SDEApproximationNetwork model. If None, the model will be loaded from the provided path.
+    path : str, optional
+        The path to a trained model. Required if no model is provided.
+
+    Attributes
+    ----------
+    model : SDEApproximationNetwork
+        The SDE approximation network model used for identification.
     """
 
     def __init__(self, model=None, path=None):
+        """
+        Initializes the SDEIdentification instance with either a provided model or loads a model from a given path.
+        """
         
         if model == None:
             
@@ -296,6 +430,33 @@ class SDEIdentification:
          self.model = model
 
     def train_model(self, xn, tilde_xn, tilde_xn1, step_size, validation_split=0.1, n_epochs=100, batch_size=1000, callbacks=[]):
+        """
+        Trains the SDEApproximationNetwork model.
+
+        Parameters
+        ----------
+        xn : array-like
+            The current state.
+        tilde_xn : array-like
+            The modified current state.
+        tilde_xn1 : array-like
+            The next state.
+        step_size : float
+            The step size for the Euler-Maruyama method.
+        validation_split : float, optional
+            The fraction of the data to be used as validation data. Default is 0.1.
+        n_epochs : int, optional
+            The number of epochs to train the model. Default is 100.
+        batch_size : int, optional
+            The number of samples per batch. Default is 1000.
+        callbacks : list, optional
+            List of callbacks to be used during training. Default is an empty list.
+
+        Returns
+        -------
+        History
+            A Keras History object containing the training history metrics.
+        """
         print(f"training for {n_epochs} epochs with {int(xn.shape[0] * (1 - validation_split))} data points"
               f", validating with {int(xn.shape[0] * validation_split)}")
 
@@ -318,6 +479,21 @@ class SDEIdentification:
         return hist
     
     def eval_sigma(self, xn, tilde_xn):
+        """
+        Evaluates the :math:'\\Sigma' value (diffusivity matrix) for given state inputs.
+
+        Parameters
+        ----------
+        xn : array-like
+            The current state.
+        tilde_xn : array-like
+            The perturbation to current state.
+
+        Returns
+        -------
+        array-like
+            Approximation to :math:'\\Sigma' matrix.
+        """
         
         sigma_theta = self.model.call_xn(xn, tilde_xn)
         return K.eval(sigma_theta)
@@ -329,7 +505,25 @@ class SDEIdentification:
                          jac_par,
                          diffusivity_type):
         """
-        Use the neural network to sample a path with the Euler Maruyama scheme.
+        Samples a new state (tilde_xn1) using the Euler-Maruyama scheme.
+
+        Parameters
+        ----------
+        xn : array-like
+            The current state.
+        tilde_xn : array-like
+            The modified current state.
+        step_size : float
+            The step size for the Euler-Maruyama method.
+        jac_par : dict
+            Parameters for the Jacobian computation.
+        diffusivity_type : str
+            The type of diffusivity matrix to use.
+
+        Returns
+        -------
+        array-like
+            The sampled next state perturbation (tilde_xn1).
         """
         sigma_theta = self.model.call_xn(xn, tilde_xn)
 
@@ -344,6 +538,14 @@ class SDEIdentification:
         return keras.backend.eval(tilde_xn1)
     
     def save_model(self,path):
+        """
+        Saves the SDEApproximationNetwork model and its parameters.
+
+        Parameters
+        ----------
+        path : str
+            The path where the model and its parameters will be saved.
+        """
         
         SDEApp = {}
         SDEApp['step_size'] = self.model.step_size
@@ -365,10 +567,32 @@ class SDEIdentification:
 
 class SDEApproximationNetwork(tf.keras.Model):
     """
-    A neural network sde_model that uses a given
-    sde_model network to predict Sigma matrix
-    of our linearized Lorenz, and trains it using EM scheme
-    based loss functions.
+    A TensorFlow Keras model designed for Stochastic Differential Equation (SDE) approximation.
+
+    This model uses a specified neural network model (sde_model) to predict the Sigma matrix
+    for a linearized Lorenz system. It is trained using an Euler-Maruyama scheme-based loss function.
+
+    Parameters
+    ----------
+    sde_model : tf.keras.Model
+        The neural network model used for predicting the Sigma matrix.
+    step_size : float
+        The step size used in the Euler-Maruyama method for SDE approximation.
+    jac_par : dict
+        Parameters for the Jacobian computation.
+    method : str, optional
+        The numerical method used for SDE approximation, default is 'euler'.
+    diffusivity_type : str, optional
+        The type of diffusivity matrix to be used, default is 'diagonal'.
+    scale_per_point : float, optional
+        Scaling factor applied per point, default is 1e-3.
+    **kwargs
+        Additional keyword arguments for the TensorFlow Keras model.
+
+    Attributes
+    ----------
+    VALID_METHODS : list
+        A list of valid numerical methods for SDE approximation.
     """
     VALID_METHODS = ["euler"]
 
@@ -380,6 +604,9 @@ class SDEApproximationNetwork(tf.keras.Model):
                  diffusivity_type="diagonal",
                  scale_per_point=1e-3,
                  **kwargs):
+        """
+        Initializes the SDEApproximationNetwork with the specified parameters.
+        """
         super().__init__(**kwargs)
         self.sde_model = sde_model
         self.step_size = step_size
@@ -391,10 +618,31 @@ class SDEApproximationNetwork(tf.keras.Model):
 
     @staticmethod
     def verify(method):
+        """
+        Verifies if the provided method is valid for SDE approximation.
+
+        Parameters
+        ----------
+        method : str
+            The numerical method to be verified.
+
+        Raises
+        ------
+        ValueError
+            If the method is not among the valid methods for SDE approximation.
+        """
         if not (method in SDEApproximationNetwork.VALID_METHODS):
             raise ValueError(method + " is not a valid method. Use any of" + SDEApproximationNetwork.VALID_METHODS)
 
     def get_config(self):
+        """
+        Retrieves the configuration of the SDEApproximationNetwork.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the configuration parameters of the model.
+        """
         return {
             "sde_model": self.sde_model,
             "step_size": self.step_size,
@@ -405,23 +653,29 @@ class SDEApproximationNetwork(tf.keras.Model):
     @staticmethod
     def euler_maruyama_pdf(xn, tilde_xn, tilde_xn1, step_size, jac_par, model_, diffusivity_type="diagonal"):
         """
-        This implies a very simple sde_model, essentially just a Gaussian process
-        on x_n that predicts the drift and diffusivity.
-        Returns log P(y(n+1) | y(n)) for the Euler-Maruyama scheme.
+        Computes the log probability density function for the Euler-Maruyama scheme.
 
         Parameters
         ----------
-        ynp1_ next point in time.
-        yn_ current point in time.
-        step_size_ step size in time.
-        model_ sde_model that returns a (drift, diffusivity) tuple.
-        parameters_ parameters of the model at yn_. Default: None.
-        diffusivity_type defines which type of diffusivity matrix will be used. See ModelBuilder.DIFF_TYPES.
+        xn : array-like
+            The current state.
+        tilde_xn : array-like
+            The modified current state.
+        tilde_xn1 : array-like
+            The next state.
+        step_size : float
+            The step size for the Euler-Maruyama method.
+        jac_par : dict
+            Parameters for the Jacobian computation.
+        model_ : tf.keras.Model
+            The neural network model used for SDE approximation.
+        diffusivity_type : str, optional
+            The type of diffusivity matrix to be used, default is 'diagonal'.
 
         Returns
         -------
-        logarithm of p(ynp1_ | yn_) under the Euler-Maruyama scheme.
-
+        tensor
+            The log probability of transitioning from the current state to the next state.
         """
         
         sigma_theta = model_(tf.concat([xn, tilde_xn], axis=1)) #Call to the model defined in ModelBuilder.diff_network
@@ -436,6 +690,21 @@ class SDEApproximationNetwork(tf.keras.Model):
     
     @staticmethod
     def split_inputs(inputs, step_size=None):
+        """
+        Splits the input tensor into components.
+
+        Parameters
+        ----------
+        inputs : tensor
+            The input tensor containing state variables and step size.
+        step_size : float, optional
+            The step size for the Euler-Maruyama method. If None, it is extracted from the inputs.
+
+        Returns
+        -------
+        tuple
+            A tuple of tensors (xn, tilde_xn, tilde_xn1, step_size).
+        """
         
         n_total = inputs.shape[1]
         
@@ -451,16 +720,19 @@ class SDEApproximationNetwork(tf.keras.Model):
 
     def call_xn(self, xn, tilde_xn):
         """
-        Can be used to evaluate the drift and diffusivity
-        of the sde_model. This is different than the "call" method
-        because it only expects "x_k", not "x_{k+1}" as well.
+        Evaluates the diffusivity of the SDE model for given state inputs.
 
         Parameters
         ----------
-        inputs_xn input points: xn and tilde_xn
+        xn : tensor
+            The current state.
+        tilde_xn : tensor
+            The perturbation to the current state.
 
-        Returns evaluated the diffusivity of the sde_model
+        Returns
         -------
+        tensor
+            The evaluated diffusivity of the SDE model.
         """
         assert(len(xn.shape) == len(tilde_xn.shape)), "Shape dimension mismatch between xn and tilde_xn"
         if len(xn.shape) == 1:
@@ -474,7 +746,17 @@ class SDEApproximationNetwork(tf.keras.Model):
 
     def call(self, inputs):
         """
-        Expects the input tensor to contain all of (xn, tilde_xn, tilde_xn1, step_size).
+        Processes the inputs and computes the loss for the model.
+
+        Parameters
+        ----------
+        inputs : tensor
+            The input tensor containing all of (xn, tilde_xn, tilde_xn1, step_size).
+
+        Returns
+        -------
+        tensor
+            The output of the neural network model predicting the Sigma matrix.
         """
         xn, tilde_xn, tilde_xn1, step_size = SDEApproximationNetwork.split_inputs(inputs, self.step_size)
 
