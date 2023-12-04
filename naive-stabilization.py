@@ -80,7 +80,7 @@ for alpha in alphas:
         x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
         # alpha method
-        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_EM[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
+        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
         x_alpha[n+1,:] = xh[n+1,:] + xtilde[n+1,:]
 
     plt.plot(t,(((xtilde[:,0]))),label=r"$\alpha = $" + str(alpha))
