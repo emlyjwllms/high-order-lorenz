@@ -83,13 +83,14 @@ for alpha in alphas:
         xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
         x_alpha[n+1,:] = xh[n+1,:] + xtilde[n+1,:]
 
-    plt.plot(t,(((xtilde[:,0]))),label=r"$\alpha = $" + str(alpha))
+    plt.plot(t,((np.abs(xtilde[:,0]))),label=r"$\alpha = $" + str(alpha))
     plt.xlabel("t")
     plt.yscale("log")
-    plt.ylabel(r"$\tilde{\mathbf{x}}_\alpha$")
+    plt.ylabel(r"$|\tilde{\mathbf{x}}_\alpha|$")
     #plt.title(r"$\alpha$ = " + str(alpha))
     plt.legend(loc='upper left')
     #plt.ylim(-50,50)
+    plt.xlim(-5,5)
     plt.grid()
 
 # plt.subplot(1,3,2)
