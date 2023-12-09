@@ -6,9 +6,9 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'high-order-lorenz'
-copyright = '2023, Emily Williams Renato Trono Figueras'
-author = 'Emily Williams Renato Trono Figueras'
+project = 'Diffusion Network for Stabilizing the Linearized Loerenz System'
+copyright = '2023, Emily Williams - Renato Trono Figueras'
+author = 'Emily Williams - Renato Trono Figueras'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -25,6 +25,9 @@ language = 'python'
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
+html_css_files = [
+    'custom_mine.css'
+]
 
 import os
 import sys
