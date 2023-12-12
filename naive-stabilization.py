@@ -72,15 +72,15 @@ alphas = np.array([0.5,1.0,1.5])
 
 for alpha in alphas:
     # time integration
-    for n in range(N-1):
+    for n in range(int(N/2)):
         tn = t[n]
-        dW = np.sqrt(dt) * np.random.randn(N)
+        dW_n = np.sqrt(dt) * np.random.randn(3)
 
         # Euler-Maruyama method
         x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
 
         # alpha method
-        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
+        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW_n
         x_alpha[n+1,:] = xh[n+1,:] + xtilde[n+1,:]
 
     plt.plot(t,((np.abs(xtilde[:,0]))),label=r"$\alpha = $" + str(alpha))
@@ -110,6 +110,6 @@ for alpha in alphas:
 # plt.grid()
 # plt.tight_layout()
 
-plt.savefig('alpha-x.png', format='png', dpi=300,transparent=True,bbox_inches='tight')
+#plt.savefig('alpha-x.png', format='png', dpi=300,transparent=True,bbox_inches='tight')
 plt.show()
 

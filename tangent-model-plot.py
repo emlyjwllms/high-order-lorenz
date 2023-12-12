@@ -67,16 +67,16 @@ plt.show()
 
 fig = plt.figure(figsize=(7,7))
 ax1 = fig.add_subplot(1,1,1,projection='3d')
-ax1.plot(*xh_tilde,label=r"$\tilde{\mathbf{x}}$")
-ax1.set_xlabel(r"$\tilde{x}$")
-ax1.set_ylabel(r"$\tilde{y}$")
-ax1.set_zlabel(r"$\tilde{z}$")
+ax1.plot(*xh_tilde + xh,label=r"$\tilde{\mathbf{x}}$")
+ax1.set_xlabel(r"$x + \tilde{x}$")
+ax1.set_ylabel(r"$y + \tilde{y}$")
+ax1.set_zlabel(r"$z + \tilde{z}$")
 ax1.set_xlim(-300,300)
 ax1.set_ylim(-300,300)
 ax1.set_zlim(-300,300)
 #ax1.legend()
 
-plt.savefig('unstable-3d.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+plt.savefig('unstable-3d-full.png',dpi=300,format='png',transparent=True)
 plt.show()
 
 

@@ -189,159 +189,174 @@ model.load_weights(file_path)
 
 sde_i = SDEIdentification(model=model)
 
-N = len(t)
-epsilon = 10e-3
-sigma = 10
-r = 28
-beta = 8/3
-
-# initial conditions
-x_EM = np.zeros((N,3))
-xtilde = np.zeros((N,3))
-xtilde_NN = np.zeros((N,3))
-x_NN = np.zeros((N,3))
-x_alpha = np.zeros((N,3))
-x_EM[0,:] = [-8.67139571762,4.98065219709,25]
-x_NN[0,:] = [-8.67139571762,4.98065219709,25]
-x_alpha[0,:] = [-8.67139571762,4.98065219709,25]
-
-xtilde[0,:] = epsilon*np.random.randn(3)
-xtilde_NN[0,:] = xtilde[0,:]
-
-# time integration
-for n in range(N-1):
-    tn = t[n]
-    dW = np.sqrt(dt) * np.random.randn(N)
-
-    # Euler-Maruyama method
-    x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
-
-    # alpha method
-    alpha = 1.0
-    xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW[n]
-    x_alpha[n+1,:] = xh[n+1,:] + xtilde[n+1,:]
-
-    # NN method
-    xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
-    x_NN[n+1,:] = xh[n+1,:] + xtilde_NN[n+1,:]
-
-
-# plt.figure(3,figsize=(12,4))
-# plt.subplot(1,3,1)
-# plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}_\alpha$")
-# plt.plot(t,np.log(np.abs(xtilde_NN[:,0])),label=r"$\tilde{x}_{NN}$")
-# plt.xlabel("t")
-# plt.yscale("log")
-# #plt.title(r"$\alpha$ = " + str(alpha))
-# plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
-# plt.legend()
-# plt.grid()
-
-# plt.subplot(1,3,2)
-# plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}_\alpha$")
-# plt.plot(t,np.log(np.abs(xtilde_NN[:,1])),label=r"$\tilde{y}_{NN}$")
-# plt.xlabel("t")
-# plt.yscale("log")
-# plt.ylabel(r"$\log(|\tilde{\mathbf{y}}|)$")
-# plt.legend()
-# plt.grid()
-
-# plt.subplot(1,3,3)
-# plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}_\alpha$")
-# plt.plot(t,np.log(np.abs(xtilde_NN[:,2])),label=r"$\tilde{z}_{NN}$")
-# plt.xlabel("t")
-# plt.yscale("log")
-# plt.ylabel(r"$\log(|\tilde{\mathbf{z}}|)$")
-# plt.legend()
-# plt.grid()
-# plt.tight_layout()
-# plt.savefig('logtildes.png', format='png', dpi=300)
-# plt.show()
-
-plt.figure(4,figsize=(12,4))
-plt.subplot(1,3,1)
-plt.plot(t,(xtilde[:,0]),label=r"$\tilde{x}_\alpha$")
-plt.plot(t,(xtilde_NN[:,0]),label=r"$\tilde{x}_{NN}$")
-plt.xlabel("t")
-#plt.title(r"$\alpha$ = " + str(alpha))
-plt.ylabel(r"$\tilde{\mathbf{x}}$")
-plt.legend()
-plt.grid()
-
-plt.subplot(1,3,2)
-plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_\alpha$")
-plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
-plt.xlabel("t")
-plt.ylabel(r"$\tilde{\mathbf{y}}$")
-plt.legend()
-plt.grid()
-
-plt.subplot(1,3,3)
-plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_\alpha$")
-plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
-plt.xlabel("t")
-plt.ylabel(r"$\tilde{\mathbf{z}}$")
-plt.legend()
-plt.grid()
-plt.tight_layout()
-#plt.savefig('tildes.png', format='png', dpi=300)
-plt.show()
-
-fig = plt.figure(figsize=(7,7))
-ax1 = fig.add_subplot(1,1,1,projection='3d')
-ax1.plot(*xtilde.T,label=r"$\alpha$")
-ax1.set_xlabel(r"$\tilde{x}_\alpha$")
-ax1.set_ylabel(r"$\tilde{y}_\alpha$")
-ax1.set_zlabel(r"$\tilde{z}_\alpha$")
-ax1.legend()
-#plt.savefig('alpha-3d.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-plt.show()
-
-fig2 = plt.figure(figsize=(7,7))
-ax12 = fig2.add_subplot(1,1,1,projection='3d')
-ax12.plot(*xtilde_NN.T,label=r"$NN$")
-ax12.set_xlabel(r"$\tilde{x}_{NN}$")
-ax12.set_ylabel(r"$\tilde{y}_{NN}$")
-ax12.set_zlabel(r"$\tilde{z}_{NN}$")
-#ax12.legend()
-plt.savefig('nn-3d.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-plt.show()
 
 
 
-# plt.figure(22,figsize=(12,4))
-# plt.subplot(1,3,1)
-# plt.plot(t,xh[:,0],label=r"${x}$")
-# plt.plot(t,x_EM[:,0],label=r"${x}_{EM}$")
-# plt.plot(t,x_NN[:,0],label=r"${x}_{NN}$")
-# #plt.plot(t,xtilde[:,0],label=r"$\tilde{x}_{\alpha}$")
-# plt.legend()
-# plt.xlabel("t")
-# plt.ylabel(r"${\mathbf{x}}$")
-# plt.ylim(-20,20)
-# plt.grid()
+plot = True
 
-# plt.subplot(1,3,2)
-# plt.plot(t,xh[:,1],label=r"${y}$")
-# plt.plot(t,x_EM[:,1],label=r"${y}_{EM}$")
-# plt.plot(t,x_NN[:,1],label=r"${y}_{NN}$")
-# #plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_{\alpha}$")
-# plt.legend()
-# plt.xlabel("t")
-# plt.ylabel(r"${\mathbf{y}}$")
-# plt.ylim(-25,25)
-# plt.grid()
+if plot:
+    N = len(t)
+    epsilon = 10e-3
+    sigma = 10
+    r = 28
+    beta = 8/3
 
-# plt.subplot(1,3,3)
-# plt.plot(t,xh[:,2],label=r"${z}$")
-# plt.plot(t,x_EM[:,2],label=r"${z}_{EM}$")
-# plt.plot(t,x_NN[:,2],label=r"${z}_{NN}$")
-# #plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_{\alpha}$")
-# plt.xlabel("t")
-# plt.ylabel(r"${\mathbf{z}}$")
-# plt.legend()
-# plt.grid()
-# plt.ylim(0,50)
-# plt.tight_layout()
-# plt.savefig('paths.png', format='png', dpi=300)
-# plt.show()
+    # initial conditions
+    x_EM = np.zeros((N,3))
+    xtilde = np.zeros((N,3))
+    xtilde_NN = np.zeros((N,3))
+    x_NN = np.zeros((N,3))
+    x_alpha = np.zeros((N,3))
+    x_EM[0,:] = [-8.67139571762,4.98065219709,25]
+    x_NN[0,:] = [-8.67139571762,4.98065219709,25]
+    x_alpha[0,:] = [-8.67139571762,4.98065219709,25]
+
+    xtilde[0,:] = epsilon*np.random.randn(3)
+    xtilde_NN[0,:] = xtilde[0,:]
+
+    # time integration
+    for n in range(N-1):
+        tn = t[n]
+        dW_n = np.sqrt(dt) * np.random.randn(3)
+
+        # Euler-Maruyama method
+        x_EM[n+1,:] = x_EM[n,:] + f(x_EM[n,:])*dt
+
+        # alpha method
+        alpha = 1.0
+        xtilde[n+1,:] = xtilde[n,:] + np.matmul(dfdx(x_alpha[n,:]),xtilde[n,:])*dt + naive_model(alpha)*dW_n
+        x_alpha[n+1,:] = xh[n+1,:] + xtilde[n+1,:]
+
+        # NN method
+        xtilde_NN[n+1,:] = sde_i.sample_tilde_xn1(x_NN[n,:], xtilde_NN[n,:], dt, jac_par, diffusivity_type)
+        x_NN[n+1,:] = xh[n+1,:] + xtilde_NN[n+1,:]
+
+
+    # plt.figure(3,figsize=(12,4))
+    # plt.subplot(1,3,1)
+    # plt.plot(t,np.log(np.abs(xtilde[:,0])),label=r"$\tilde{x}_\alpha$")
+    # plt.plot(t,np.log(np.abs(xtilde_NN[:,0])),label=r"$\tilde{x}_{NN}$")
+    # plt.xlabel("t")
+    # plt.yscale("log")
+    # #plt.title(r"$\alpha$ = " + str(alpha))
+    # plt.ylabel(r"$\log(|\tilde{\mathbf{x}}|)$")
+    # plt.legend()
+    # plt.grid()
+
+    # plt.subplot(1,3,2)
+    # plt.plot(t,np.log(np.abs(xtilde[:,1])),label=r"$\tilde{y}_\alpha$")
+    # plt.plot(t,np.log(np.abs(xtilde_NN[:,1])),label=r"$\tilde{y}_{NN}$")
+    # plt.xlabel("t")
+    # plt.yscale("log")
+    # plt.ylabel(r"$\log(|\tilde{\mathbf{y}}|)$")
+    # plt.legend()
+    # plt.grid()
+
+    # plt.subplot(1,3,3)
+    # plt.plot(t,np.log(np.abs(xtilde[:,2])),label=r"$\tilde{z}_\alpha$")
+    # plt.plot(t,np.log(np.abs(xtilde_NN[:,2])),label=r"$\tilde{z}_{NN}$")
+    # plt.xlabel("t")
+    # plt.yscale("log")
+    # plt.ylabel(r"$\log(|\tilde{\mathbf{z}}|)$")
+    # plt.legend()
+    # plt.grid()
+    # plt.tight_layout()
+    # plt.savefig('logtildes.png', format='png', dpi=300)
+    # plt.show()
+
+    plt.figure(4,figsize=(12,4))
+    plt.subplot(1,3,1)
+    plt.plot(t,(xtilde[:,0]),label=r"$\tilde{x}_\alpha$")
+    plt.plot(t,(xtilde_NN[:,0]),label=r"$\tilde{x}_{NN}$")
+    plt.xlabel("t")
+    #plt.title(r"$\alpha$ = " + str(alpha))
+    plt.ylabel(r"$\tilde{\mathbf{x}}$")
+    plt.legend()
+    plt.grid()
+
+    plt.subplot(1,3,2)
+    plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_\alpha$")
+    plt.plot(t,xtilde_NN[:,1],label=r"$\tilde{y}_{NN}$")
+    plt.xlabel("t")
+    plt.ylabel(r"$\tilde{\mathbf{y}}$")
+    plt.legend()
+    plt.grid()
+
+    plt.subplot(1,3,3)
+    plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_\alpha$")
+    plt.plot(t,xtilde_NN[:,2],label=r"$\tilde{z}_{NN}$")
+    plt.xlabel("t")
+    plt.ylabel(r"$\tilde{\mathbf{z}}$")
+    plt.legend()
+    plt.grid()
+    plt.tight_layout()
+    #plt.savefig('tildes.png', format='png', dpi=300)
+    plt.show()
+
+    # fig = plt.figure(figsize=(7,7))
+    # ax1 = fig.add_subplot(1,1,1,projection='3d')
+    # ax1.plot(*xtilde.T,label=r"$\alpha$")
+    # ax1.set_xlabel(r"$\tilde{x}_\alpha$")
+    # ax1.set_ylabel(r"$\tilde{y}_\alpha$")
+    # ax1.set_zlabel(r"$\tilde{z}_\alpha$")
+    # ax1.legend()
+    # #plt.savefig('alpha-3d.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+    # plt.show()
+
+    fig2 = plt.figure(figsize=(7,7))
+    ax12 = fig2.add_subplot(1,1,1,projection='3d')
+    ax12.plot(*xtilde_NN.T,label=r"$NN$")
+    ax12.set_xlabel(r"$\tilde{x}_{NN}$")
+    ax12.set_ylabel(r"$\tilde{y}_{NN}$")
+    ax12.set_zlabel(r"$\tilde{z}_{NN}$")
+    #ax12.legend()
+    #plt.savefig('nn-3d.png',dpi=300,format='png',transparent=True)
+    plt.show()
+
+    fig22 = plt.figure(figsize=(7,7))
+    ax122 = fig22.add_subplot(1,1,1,projection='3d')
+    ax122.plot(*x_NN.T,label=r"$NN$")
+    ax122.set_xlabel(r"$x + \tilde{x}_{NN}$")
+    ax122.set_ylabel(r"$y + \tilde{y}_{NN}$")
+    ax122.set_zlabel(r"$z + \tilde{z}_{NN}$")
+    #ax122.legend()
+    plt.savefig('nn-3d-full.png',dpi=300,format='png',transparent=True)
+    plt.show()
+
+
+    # plt.figure(22,figsize=(12,4))
+    # plt.subplot(1,3,1)
+    # plt.plot(t,xh[:,0],label=r"${x}$")
+    # plt.plot(t,x_EM[:,0],label=r"${x}_{EM}$")
+    # plt.plot(t,x_NN[:,0],label=r"${x}_{NN}$")
+    # #plt.plot(t,xtilde[:,0],label=r"$\tilde{x}_{\alpha}$")
+    # plt.legend()
+    # plt.xlabel("t")
+    # plt.ylabel(r"${\mathbf{x}}$")
+    # plt.ylim(-20,20)
+    # plt.grid()
+
+    # plt.subplot(1,3,2)
+    # plt.plot(t,xh[:,1],label=r"${y}$")
+    # plt.plot(t,x_EM[:,1],label=r"${y}_{EM}$")
+    # plt.plot(t,x_NN[:,1],label=r"${y}_{NN}$")
+    # #plt.plot(t,xtilde[:,1],label=r"$\tilde{y}_{\alpha}$")
+    # plt.legend()
+    # plt.xlabel("t")
+    # plt.ylabel(r"${\mathbf{y}}$")
+    # plt.ylim(-25,25)
+    # plt.grid()
+
+    # plt.subplot(1,3,3)
+    # plt.plot(t,xh[:,2],label=r"${z}$")
+    # plt.plot(t,x_EM[:,2],label=r"${z}_{EM}$")
+    # plt.plot(t,x_NN[:,2],label=r"${z}_{NN}$")
+    # #plt.plot(t,xtilde[:,2],label=r"$\tilde{z}_{\alpha}$")
+    # plt.xlabel("t")
+    # plt.ylabel(r"${\mathbf{z}}$")
+    # plt.legend()
+    # plt.grid()
+    # plt.ylim(0,50)
+    # plt.tight_layout()
+    # plt.savefig('paths.png', format='png', dpi=300)
+    # plt.show()
