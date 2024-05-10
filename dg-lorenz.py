@@ -12,6 +12,8 @@ import math
 import scipy
 from scipy.special import jacobi
 
+from lorenz_functions import *
+
 # xdot function
 def f(xv):
     x = xv[0]
@@ -38,33 +40,6 @@ def resid(c,xh0):
     
     return np.reshape(r,(3*(porder+1),))
 
-def plegendre(x,porder):
-    
-    try:
-        y = np.zeros((len(x),porder+1))
-        dy = np.zeros((len(x),porder+1))
-        ddy = np.zeros((len(x),porder+1))
-    except TypeError: # if passing in single x-point
-        y = np.zeros((1,porder+1))
-        dy = np.zeros((1,porder+1))
-        ddy = np.zeros((1,porder+1))
-
-    y[:,0] = 1
-    dy[:,0] = 0
-    ddy[:,0] = 0
-
-    if porder >= 1:
-        y[:,1] = x
-        dy[:,1] = 1
-        ddy[:,1] = 0
-    
-    for i in np.arange(1,porder):
-        y[:,i+1] = ((2*i+1)*x*y[:,i]-i*y[:,i-1])/(i+1)
-        dy[:,i+1] = ((2*i+1)*x*dy[:,i]+(2*i+1)*y[:,i]-i*dy[:,i-1])/(i+1)
-        ddy[:,i+1] = ((2*i+1)*x*ddy[:,i]+2*(2*i+1)*dy[:,i]-i*ddy[:,i-1])/(i+1)
-
-    # return y,dy,ddy
-    return y,dy
 
 
 if __name__ == "__main__":
@@ -80,7 +55,7 @@ if __name__ == "__main__":
     # simulation parameters
     TA = 10
     TB = 5
-    dt = 1/100
+    dt = 1/10000
     t = np.arange(-TB,TA+TB+1,dt)
     N = len(t)
 
@@ -132,8 +107,8 @@ if __name__ == "__main__":
         cguess = c
         xh0 = xh[:,j]
 
-
-    np.savez('dg_lorenz_dt100_p'+str(porder), xh=xh, cs=cs, t=t)
+    print('saving data')
+    np.savez('data/dg_lorenz_dt'+str(int(1/dt))+'_p'+str(porder), xh=xh, cs=cs, t=t)
 
 
 

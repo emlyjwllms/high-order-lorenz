@@ -12,153 +12,219 @@ import math
 import scipy
 from scipy.special import jacobi
 
-def plegendre(x,porder):
-    
-    try:
-        y = np.zeros((len(x),porder+1))
-        dy = np.zeros((len(x),porder+1))
-        ddy = np.zeros((len(x),porder+1))
-    except TypeError: # if passing in single x-point
-        y = np.zeros((1,porder+1))
-        dy = np.zeros((1,porder+1))
-        ddy = np.zeros((1,porder+1))
+from lorenz_functions import *
 
-    y[:,0] = 1
-    dy[:,0] = 0
-    ddy[:,0] = 0
+porder = 2
+h = 1/5
+dt = 1/100
 
-    if porder >= 1:
-        y[:,1] = x
-        dy[:,1] = 1
-        ddy[:,1] = 0
-    
-    for i in np.arange(1,porder):
-        y[:,i+1] = ((2*i+1)*x*y[:,i]-i*y[:,i-1])/(i+1)
-        dy[:,i+1] = ((2*i+1)*x*dy[:,i]+(2*i+1)*y[:,i]-i*dy[:,i-1])/(i+1)
-        ddy[:,i+1] = ((2*i+1)*x*ddy[:,i]+2*(2*i+1)*dy[:,i]-i*ddy[:,i-1])/(i+1)
+# lorenz =  np.load('data/lorenz_dt' + str(int(1/h)) + '.npz')
+# x_FE = lorenz['x_FE']
+# x_BE = lorenz['x_BE']
+# t_h = lorenz['t']
+# assert((np.round(t_h[1] - t_h[0],5) == h))
+# Nh = len(t_h)
 
-    # return y,dy,ddy
-    return y,dy
+dg_lorenz = np.load('data/dg_lorenz_dt' + str(int(1/dt)) + '_p' + str(porder) + '.npz')
 
-lorenz = np.load('lorenz_dt100.npz')
-x_FE = lorenz['x_FE']
-x_BE = lorenz['x_BE']
-x_RK = lorenz['x_RK']
-t = lorenz['t']
-
-dg_lorenz_0 = np.load('dg_lorenz_dt100_p0.npz')
-xh_0 = dg_lorenz_0['xh']
-cs_0 = dg_lorenz_0['cs']
-
-dg_lorenz = np.load('dg_lorenz_dt1000_p3.npz')
 xh = dg_lorenz['xh']
+t = dg_lorenz['t']
 cs = dg_lorenz['cs']
 
-fig1 = plt.figure(figsize=(7,10))
-ax1 = fig1.add_subplot(3,1,1)
-ax1.plot(t,x_FE[:,0],label="FE")
-ax1.plot(t,x_BE[:,0],label="BE")
-ax1.plot(t,x_RK[:,0],label="RK")
-ax1.set_ylabel(r"$x$")
-ax1.legend()
-ax1.grid()
-
-ax2 = fig1.add_subplot(3,1,2)
-ax2.plot(t,x_FE[:,1],label="FE")
-ax2.plot(t,x_BE[:,1],label="BE")
-ax2.plot(t,x_RK[:,1],label="RK")
-ax2.set_ylabel(r"$y$")
-ax2.legend()
-ax2.grid()
-
-ax3 = fig1.add_subplot(3,1,3)
-ax3.plot(t,x_FE[:,2],label="FE")
-ax3.plot(t,x_BE[:,2],label="BE")
-ax3.plot(t,x_RK[:,2],label="RK")
-ax3.set_ylabel(r"$z$")
-ax3.set_xlabel(r"$t$")
-ax3.legend()
-ax3.grid()
-
-#plt.savefig('plots/lorenz-fe-be-rk.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-plt.show()
-
-fig = plt.figure(figsize=(7,7))
-ax1 = fig.add_subplot(1,1,1,projection='3d')
-ax1.plot(*x_RK.T,label="RK")
-ax1.set_xlabel(r"$x$")
-ax1.set_ylabel(r"$y$")
-ax1.set_zlabel(r"$z$")
-ax1.legend()
-
-#plt.savefig('plots/rk-lorenz.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-plt.show()
-
 N = len(t)
-dt = t[1] - t[0]
-porder = 0
-
 xi, w = scipy.special.roots_legendre(porder+1)
 phi, dphi = plegendre(xi,porder)
 
-fig1 = plt.figure(figsize=(7,10))
-ax1 = fig1.add_subplot(3,1,1)
-ax2 = fig1.add_subplot(3,1,2)
-ax3 = fig1.add_subplot(3,1,3)
+Delta = h
 
-# # integrate across elements
-# for j in range(1,N): # loop across I_j's
-#     t0 = t[j-1]
-#     tf = t[j]
-#     c = cs_0[:,:,j] # solve residual function above
-#     ax1.scatter(dt*xi/2 + (t0+tf)/2, phi @ c[0,:])
-#     ax2.scatter(dt*xi/2 + (t0+tf)/2, phi @ c[1,:])
-#     ax3.scatter(dt*xi/2 + (t0+tf)/2, phi @ c[2,:])
+# dictionary with quadrature parameters
+quad_par = {'cs': cs, 'w': w, 'phi': phi}
 
-# ax1.scatter(t,xh_0[0,:],label=r"$x$")
-# ax2.scatter(t,xh_0[1,:],label=r"$y$")
-# ax3.scatter(t,xh_0[2,:],label=r"$z$")
-# ax3.set_xlabel(r"$t$")
-# #plt.legend()
-# plt.grid()
-# #plt.savefig('plots/dg-lorenz.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-# plt.show()
+# dictionary with jacobian parameters
+jac_par = {'sigma': 10, 'r': 28, 'beta': 8/3}
+
+xbar = filter('x', N, Delta, dt, quad_par, jac_par)
 
 
-# fig1 = plt.figure(figsize=(7,10))
-# ax1 = fig1.add_subplot(3,1,1)
-# ax1.plot(t,xh_0[0,:],label="DG, p = 0")
-# ax1.plot(t,x_BE[:,0],'k--',label="BE")
-# ax1.set_ylabel(r"$x$")
-# ax1.legend()
-# ax1.grid()
+xp = xh - xbar
 
-# ax2 = fig1.add_subplot(3,1,2)
-# ax2.plot(t,xh_0[1,:],label="DG, p = 0")
-# ax2.plot(t,x_BE[:,1],'k--',label="BE")
-# ax2.set_ylabel(r"$y$")
-# #ax2.legend()
-# ax2.grid()
+fx = f(xh,jac_par)
 
-# ax3 = fig1.add_subplot(3,1,3)
-# ax3.plot(t,xh_0[2,:],label="DG, p = 0")
-# ax3.plot(t,x_BE[:,2],'k--',label="BE")
-# ax3.set_ylabel(r"$z$")
-# #ax3.legend()
-# ax3.set_xlabel(r"$t$")
-# ax3.grid()
+fbar = filter('f(x)', N, Delta, dt, quad_par, jac_par)
 
-# #plt.savefig('plots/dg-be-lorenz.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-# plt.show()
+fxbar = f(xbar,jac_par)
+
+s = fbar - fxbar
+
+el = int(h/dt)
+
+# lorenz_NN = np.load('data/diffusion-path-NL-h' + str(int(1/h)) + '.npz')
+# xbar_NN = lorenz_NN['xbar_NN']
+
+from scipy.spatial import KDTree
+
+xbarr = xbar[:,el:-el].T
+
+tree = KDTree(xbarr)
+ind = sorted(tree.query_ball_point(xbarr[850,:], 4))
+# print(ind)
+print(len(ind))
 
 fig = plt.figure(figsize=(7,7))
-ax1 = fig.add_subplot(1,1,1,projection='3d')
-ax1.plot(*xh,label=r"$\mathbf{x}")
-ax1.set_xlabel(r"$x$")
-ax1.set_ylabel(r"$y$")
-ax1.set_zlabel(r"$z$")
-ax1.legend()
+ax = fig.add_subplot(1,1,1,projection='3d')
+ax.plot(*xbarr.T)
 
-# plt.savefig('plots/dg-lorenz-3d.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
-plt.savefig('states-3d.png',dpi=300,format='png',transparent=True,bbox_inches='tight')
+sx = np.zeros((len(ind)))
+sy = np.zeros((len(ind)))
+sz = np.zeros((len(ind)))
+
+# for i in ind:
+#     # ax.scatter(*xbarr[i,:].T, c='r')
+#     sx[i] = s[0,i]
+#     sy[i] = s[1,i]
+#     sz[i] = s[2,i]
+
+sr = s[:,el:-el]
+
+ax.scatter(*xbarr[ind,:].T, c='r', depthshade=False)
+
+ax.set_xlabel(r'$\overline{\mathbf{x}}$')
+ax.set_ylabel(r'$\overline{\mathbf{y}}$')
+ax.set_zlabel(r'$\overline{\mathbf{z}}$')
 plt.show()
+
+plt.figure(figsize=(12,12))
+plt.subplot(3,3,1)
+plt.scatter(xbarr[ind,0],sr[0,ind])
+plt.xlabel(r"$\overline{\mathbf{x}}$")
+plt.ylabel(r"${\mathbf{s}}_{x}$")
+plt.grid(True)
+
+plt.subplot(3,3,2)
+plt.scatter(xbarr[ind,1],sr[0,ind])
+plt.xlabel(r"$\overline{\mathbf{y}}$")
+plt.ylabel(r"${\mathbf{s}}_{x}$")
+plt.grid(True)
+
+plt.subplot(3,3,3)
+plt.scatter(xbarr[ind,2],sr[0,ind])
+plt.xlabel(r"$\overline{\mathbf{z}}$")
+plt.ylabel(r"${\mathbf{s}}_{x}$")
+plt.grid(True)
+
+plt.subplot(3,3,4)
+plt.scatter(xbarr[ind,0],sr[1,ind])
+plt.xlabel(r"$\overline{\mathbf{x}}$")
+plt.ylabel(r"${\mathbf{s}}_{y}$")
+plt.grid(True)
+
+plt.subplot(3,3,5)
+plt.scatter(xbarr[ind,1],sr[1,ind])
+plt.xlabel(r"$\overline{\mathbf{y}}$")
+plt.ylabel(r"${\mathbf{s}}_{y}$")
+plt.grid(True)
+
+plt.subplot(3,3,6)
+plt.scatter(xbarr[ind,2],sr[1,ind])
+plt.xlabel(r"$\overline{\mathbf{z}}$")
+plt.ylabel(r"${\mathbf{s}}_{y}$")
+plt.grid(True)
+
+plt.subplot(3,3,7)
+plt.scatter(xbarr[ind,0],sr[2,ind])
+plt.xlabel(r"$\overline{\mathbf{x}}$")
+plt.ylabel(r"${\mathbf{s}}_{z}$")
+plt.grid(True)
+
+plt.subplot(3,3,8)
+plt.scatter(xbarr[ind,1],sr[2,ind])
+plt.xlabel(r"$\overline{\mathbf{y}}$")
+plt.ylabel(r"${\mathbf{s}}_{z}$")
+plt.grid(True)
+
+plt.subplot(3,3,9)
+plt.scatter(xbarr[ind,2],sr[2,ind])
+plt.xlabel(r"$\overline{\mathbf{z}}$")
+plt.ylabel(r"${\mathbf{s}}_{z}$")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(12,4))
+plt.subplot(1,3,1)
+counts,bins = np.histogram(sr[0,ind])
+plt.stairs(counts,bins)
+plt.title(r"${\mathbf{s}}_{x}$")
+
+plt.subplot(1,3,2)
+counts,bins = np.histogram(sr[1,ind])
+plt.stairs(counts,bins)
+plt.title(r"${\mathbf{s}}_{y}$")
+
+plt.subplot(1,3,3)
+counts,bins = np.histogram(sr[2,ind])
+plt.stairs(counts,bins)
+plt.title(r"${\mathbf{s}}_{z}$")
+
+plt.show()
+
+
+# plot_3d({r"$\overline{\mathbf{x}}$": xbar[:,el:-el].T},r"$\overline{\mathbf{x}}$",r"$\overline{\mathbf{y}}$",r"$\overline{\mathbf{z}}$",None,save=False)
+
+
+# plot_3(t[el:-el],{r"${\mathbf{x}}$": xh[:,el:-el].T,r"$\overline{\mathbf{x}}$": xbar[:,el:-el].T,r"${\mathbf{x}'}$": xp[:,el:-el].T},r"t",r"$x$",r"$y$",r"$z$",None,save=False)
+# plot_3(t[el:-el],{r"${\mathbf{s}}$": s[:,el:-el].T},r"t",r"$x$",r"$y$",r"$z$",None,save=False)
+
+
+
+
+if 0:
+    diffusivity_type = "spd"
+
+    lorenz_NN_BEM = np.load('data/diffusion-path-NL-BEM-' + diffusivity_type + '-h' + str(int(1/h)) + '.npz')
+    xbar_NN_BEM = lorenz_NN_BEM['xbar_NN']
+
+    # interpolate for plotting
+
+    # xbar_NN_t = interp_3(t,t_h,xbar_NN).T
+    x_FE_t = interp_3(t,t_h,x_FE).T
+    x_BE_t = interp_3(t,t_h,x_BE).T
+    xbar_NN_BEM_t = interp_3(t,t_h,xbar_NN_BEM).T
+
+
+    # plot trajectory paths
+    plot_3(t[el:-el],{r"$\overline{\mathbf{x}}_{NN}$": xbar_NN_BEM_t[el:-el,:], r"${\mathbf{x}}_{BE}$": x_BE_t[el:-el,:], r"$\overline{\mathbf{x}}_{DG}$": xbar[:,el:-el].T},r"t",r"$x$",r"$y$",r"$z$",'plots/paths-NL-BEM-' + diffusivity_type + '-h' + str(int(1/h)) + '.png',save=True)
+
+    # plot 3D
+    plot_3d({r"$\overline{\mathbf{x}}_{NN}$": xbar_NN_BEM, r"${\mathbf{x}}_{BE}$": x_BE, r"$\overline{\mathbf{x}}_{DG}$": xbar[:,el:-el].T},r"$x$",r"$y$",r"$z$",'plots/nn-3d-coarse-nl-bem-' + diffusivity_type + '-h' + str(int(1/h)) + '.png',save=True)
+
+    # time mean
+
+    xbar_mean = np.mean(xbar[:,el:-el],1)
+    xbar_mean_cumulative = cumulative_mean(t,xbar,el)
+
+    # xbar_NN_mean = np.mean((xbar_NN[el:-el,:]).transpose(),1)
+    # xbar_NN_mean_cumulative = cumulative_mean(t_h,xbar_NN.T,0).T
+
+    xbar_NN_BEM_mean = np.mean((xbar_NN_BEM[el:-el,:]).transpose(),1)
+    xbar_NN_BEM_mean_cumulative = cumulative_mean(t_h,xbar_NN_BEM.T,0).T
+
+    x_FE_mean = np.mean((x_FE[el:-el,:]).transpose(),1)
+    x_FE_mean_cumulative = cumulative_mean(t_h,x_FE.T,0).T
+
+    x_BE_mean = np.mean((x_BE[el:-el,:]).transpose(),1)
+    x_BE_mean_cumulative = cumulative_mean(t_h,x_BE.T,0).T
+
+
+    # interpolate for plotting
+
+    # xbar_NN_mean_cumulative_t = interp_3(t,t_h,xbar_NN_mean_cumulative).T
+    xbar_NN_BEM_mean_cumulative_t = interp_3(t,t_h,xbar_NN_BEM_mean_cumulative).T
+    x_FE_mean_cumulative_t = interp_3(t,t_h,x_FE_mean_cumulative).T
+    x_BE_mean_cumulative_t = interp_3(t,t_h,x_BE_mean_cumulative).T
+
+
+    plot_3(t,{r"$\overline{\mathbf{x}}_{NN}^{avg}$": np.ones((N,3))*xbar_NN_BEM_mean.T, r"${\mathbf{x}}_{BE}^{avg}$": np.ones((N,3))*x_BE_mean.T, r"$\overline{\mathbf{x}}_{DG}^{avg}$": np.ones((N,3))*xbar_mean.T},r"t",r"$x$",r"$y$",r"$z$",'plots/paths-NL-BEM-mean-' + diffusivity_type + '-h' + str(int(1/h)) + '.png',save=True)
+
+    plot_3(t[el:-el],{r"$\overline{\mathbf{x}}_{NN}^{avg,t}$": xbar_NN_BEM_mean_cumulative_t[el:-el,:], r"${\mathbf{x}}_{BE}^{avg,t}$": x_BE_mean_cumulative_t[el:-el,:], r"$\overline{\mathbf{x}}_{DG}^{avg,t}$": xbar_mean_cumulative.T},r"t",r"$x$",r"$y$",r"$z$",'plots/paths-NL-BEM-mean-cumulative-' + diffusivity_type + '-h' + str(int(1/h)) + '.png',save=True)
+

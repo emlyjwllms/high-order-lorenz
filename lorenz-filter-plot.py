@@ -148,11 +148,11 @@ if __name__ == "__main__":
 
     porder = 2
 
-    lorenz = np.load('dg_lorenz_dt100_p' + str(porder) + '.npz')
-    stoch_lorenz = np.load('dg_stochastic_lorenz_dt100_p' + str(porder) + '.npz')
-    xbar_sgs = stoch_lorenz['xh']
+    lorenz = np.load('data/dg_lorenz_dt100_p' + str(porder) + '.npz')
+    # stoch_lorenz = np.load('dg_stochastic_lorenz_dt100_p' + str(porder) + '.npz')
+    # xbar_sgs = stoch_lorenz['xh']
 
-    Delta = stoch_lorenz['Delta']
+    Delta = 0.2 #stoch_lorenz['Delta']
     
 
     xh = lorenz['xh']
@@ -193,10 +193,31 @@ if __name__ == "__main__":
         s_model[:,i] = 0.5*np.matmul(np.matmul(xpi.T,hes + (Delta**2)/12 * jac.T * hes * jac),xpi)
         s_random[:,i] = 0.5*np.matmul(np.matmul(xpi_random.T,hes + (Delta**2)/12 * jac.T * hes * jac),xpi_random)
 
+    plt.figure(figsize=(12,4))
+    plt.subplot(1,3,1)
+    plt.scatter(xbar[0,el:-el],s[0,el:-el],s=5)
+    plt.xlabel(r"$\overline{\mathbf{x}}_{1}$")
+    plt.ylabel(r"${\mathbf{s}}_{1}$")
+    plt.grid(True)
+
+    plt.subplot(1,3,2)
+    plt.scatter(xbar[1,el:-el],s[1,el:-el],s=5)
+    plt.xlabel(r"$\overline{\mathbf{x}}_{2}$")
+    plt.ylabel(r"${\mathbf{s}}_{2}$")
+    plt.grid(True)
+
+    plt.subplot(1,3,3)
+    plt.scatter(xbar[2,el:-el],s[2,el:-el],s=5)
+    plt.xlabel(r"$\overline{\mathbf{x}}_{3}$")
+    plt.ylabel(r"${\mathbf{s}}_{3}$")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
     fig = plt.figure(figsize=(4,4))
     ax1 = fig.add_subplot(1,1,1,projection='3d')
     ax1.plot(*xbar,label=r"true")
-    ax1.plot(*xbar_sgs,label=r"model")
+    # ax1.plot(*xbar_sgs,label=r"model")
     ax1.set_xlabel(r"$\overline{\mathbf{x}}$")
     ax1.set_ylabel(r"$\overline{\mathbf{y}}$")
     ax1.set_zlabel(r"$\overline{\mathbf{z}}$")
